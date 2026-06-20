@@ -1,0 +1,12 @@
+{
+  "users": [
+    {"id": "u_alice", "name": "Alice", "tenant": "acme", "roles": ["user"]},
+    {"id": "u_bob", "name": "Bob", "tenant": "acme", "roles": ["user"]},
+    {"id": "u_carol", "name": "Carol", "tenant": "globex", "roles": ["user", "admin"]}
+  ],
+  "documents": [
+    {"id": "doc_1", "owner": "u_alice", "tenant": "acme", "title": "Alice Q3 plan"},
+    {"id": "doc_2", "owner": "u_bob", "tenant": "acme", "title": "Bob design doc"},
+    {"id": "doc_3", "owner": "u_carol", "tenant": "globex", "title": "Carol roadmap"}
+  ]
+}

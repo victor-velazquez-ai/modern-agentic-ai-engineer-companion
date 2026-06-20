@@ -1,0 +1,13 @@
+{
+  "id": "evt_01HZX7Q9KP",
+  "type": "agent.run.completed",
+  "created": "2026-06-20T12:00:00Z",
+  "tenant": "acme",
+  "data": {
+    "run_id": "run_8a21",
+    "agent": "research-assistant",
+    "status": "succeeded",
+    "tokens": 18422,
+    "result_url": "https://api.example.com/v1/runs/run_8a21/result"
+  }
+}

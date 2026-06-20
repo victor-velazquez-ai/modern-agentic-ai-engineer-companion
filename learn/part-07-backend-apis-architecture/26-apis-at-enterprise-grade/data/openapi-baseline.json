@@ -1,0 +1,23 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Agent API", "version": "1.0.0"},
+  "paths": {
+    "/v1/runs": {
+      "post": {
+        "summary": "Create Run",
+        "operationId": "create_run",
+        "responses": {"200": {"description": "Successful Response"}}
+      }
+    },
+    "/v1/runs/{run_id}": {
+      "get": {
+        "summary": "Get Run",
+        "operationId": "get_run",
+        "parameters": [
+          {"name": "run_id", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "Successful Response"}}
+      }
+    }
+  }
+}
