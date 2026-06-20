@@ -1,0 +1,48 @@
+# Baseline Python dependencies for the companion notebooks.
+#
+# Phase 1 note: this is the PLANNED baseline. Versions are pinned at each book-edition
+# release tag (see docs/BOOK-INTEGRATION.md §3). A notebook needing extras declares them
+# in its first cell and in its chapter PLAN.md.
+
+# --- Notebook runtime ---
+jupyterlab
+ipykernel
+python-dotenv
+
+# --- Model SDKs ---
+anthropic
+openai
+
+# --- Agents & frameworks (introduced across Parts IV–V) ---
+langgraph
+langchain
+pydantic-ai
+pydantic
+
+# --- RAG & data (Parts IV, VII) ---
+chromadb
+pinecone-client
+tiktoken
+sentence-transformers
+psycopg[binary]
+sqlalchemy
+redis
+
+# --- Backend (Part VII) ---
+fastapi
+uvicorn
+httpx
+celery
+
+# --- Eval, observability, quality (Part VI) ---
+ragas
+langfuse
+opentelemetry-sdk
+pytest
+
+# --- Notebook QA / CI (see docs/NOTEBOOK-STANDARDS.md §6) ---
+nbval
+papermill
+nbqa
+ruff
+black
