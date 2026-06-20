@@ -1,0 +1,24 @@
+{
+  "docs": [
+    {
+      "id": "doc-refunds-01",
+      "title": "Refund policy",
+      "text": "Customers may request a refund within 30 days of purchase. Refunds are issued to the original payment method within 5 to 7 business days after approval. Digital goods are non-refundable once downloaded."
+    },
+    {
+      "id": "doc-sla-02",
+      "title": "Support SLA",
+      "text": "Priority-one incidents receive a first response within 1 hour, 24/7. Standard tickets are answered within one business day. The support window covers 08:00 to 20:00 UTC on weekdays."
+    },
+    {
+      "id": "doc-retention-03",
+      "title": "Data retention",
+      "text": "Customer records are retained for 24 months after account closure, then permanently deleted. Backups are encrypted at rest and rotated every 90 days."
+    },
+    {
+      "id": "doc-onboarding-04",
+      "title": "Onboarding checklist",
+      "text": "New workspaces start on the Team plan. An admin must verify the company domain before inviting more than 10 members. SSO is available on the Enterprise plan only."
+    }
+  ]
+}

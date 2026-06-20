@@ -1,0 +1,11 @@
+[
+  {"role": "user", "content": "Hi! I'm Maria, I run support ops at a fintech called Northwind."},
+  {"role": "assistant", "content": "Hi Maria, happy to help. What are you working on?"},
+  {"role": "user", "content": "We keep losing context between shifts. By the way I'm severely allergic to penicillin, in case that ever comes up in the medical-claims flow."},
+  {"role": "assistant", "content": "Noted. Let's focus on the shift handoff first."},
+  {"role": "user", "content": "Right. My manager is Ana Restrepo. We ship releases on Fridays and I hate Monday standups."},
+  {"role": "assistant", "content": "Got it. So Fridays for releases, and avoid scheduling on Monday mornings."},
+  {"role": "user", "content": "Exactly. Also, prefer metric units and a terse style in any summary you write me."},
+  {"role": "assistant", "content": "Understood. Anything else for today?"},
+  {"role": "user", "content": "That's it, thanks. Nice weather today by the way."}
+]

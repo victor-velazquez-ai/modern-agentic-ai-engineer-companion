@@ -1,0 +1,12 @@
+{"question": "How long do I have to refund a domestic order?", "gold_ids": ["refund-01"], "reference_answer": "Domestic orders are refundable within 30 days of purchase."}
+{"question": "Can I get a refund on an international order after three weeks?", "gold_ids": ["refund-02"], "reference_answer": "No. International orders are non-refundable after 14 days, and three weeks is past that window."}
+{"question": "How do I cancel my subscription?", "gold_ids": ["cancel-01"], "reference_answer": "Go to Settings > Subscription and click Cancel Plan; the plan stays active until the end of the current billing period."}
+{"question": "How do I upgrade to a higher plan?", "gold_ids": ["upgrade-01"], "reference_answer": "Go to Settings > Subscription, click Change Plan, and choose a higher tier; upgrades take effect immediately and are prorated."}
+{"question": "What does ERR_QUOTA_42 mean and how do I fix it?", "gold_ids": ["quota-01"], "reference_answer": "It means you exceeded your monthly API request quota; upgrade your plan or wait for the quota to reset on the first of the month."}
+{"question": "What is the API rate limit per minute?", "gold_ids": ["ratelimit-01"], "reference_answer": "100 requests per minute per key; exceeding it returns HTTP 429 with a Retry-After header."}
+{"question": "What does SKU WIDGET-PRO-128 refer to?", "gold_ids": ["sku-01"], "reference_answer": "The 128-channel Widget Pro controller, which supersedes the discontinued WIDGET-PRO-64 and ships with a 3-year warranty."}
+{"question": "What is the difference between the monthly quota and the rate limit?", "gold_ids": ["quota-01", "ratelimit-01"], "reference_answer": "The monthly quota (ERR_QUOTA_42) caps total requests per month, while the rate limit caps requests per minute per key (HTTP 429)."}
+{"question": "How long after cancelling can I keep using my plan?", "gold_ids": ["cancel-01"], "reference_answer": "Until the end of the current billing period; you are not charged again after that."}
+{"question": "Are customs fees on international orders refundable?", "gold_ids": ["refund-02"], "reference_answer": "No. Customs and import fees are never refundable."}
+{"question": "What is the warranty on the Widget Pro 128?", "gold_ids": ["sku-01"], "reference_answer": "A 3-year warranty."}
+{"question": "Where do I click to request a refund?", "gold_ids": ["refund-01"], "reference_answer": "Open Billing > Orders, select the order, and click Request Refund."}

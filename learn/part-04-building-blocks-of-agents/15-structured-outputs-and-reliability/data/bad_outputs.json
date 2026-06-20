@@ -1,0 +1,7 @@
+{
+  "prose_wrapped": "Sure! Here's the triage you asked for as JSON:\n\n```json\n{\n  \"summary\": \"Customer reports duplicate charge for the October subscription.\",\n  \"severity\": \"medium\",\n  \"product_area\": \"billing\",\n  \"needs_human\": true,\n  \"confidence\": 0.88\n}\n```\n\nLet me know if you'd like anything changed!",
+  "trailing_comma": "{\n  \"summary\": \"All users locked out; dashboard returns a 500 error.\",\n  \"severity\": \"critical\",\n  \"product_area\": \"dashboard\",\n  \"needs_human\": true,\n  \"confidence\": 0.95,\n}",
+  "missing_field": "{\n  \"summary\": \"CSV export columns are in the wrong order.\",\n  \"severity\": \"low\",\n  \"product_area\": \"reports\"\n}",
+  "semantically_wrong": "{\n  \"summary\": \"All users locked out; dashboard returns a 500 error.\",\n  \"severity\": \"critical\",\n  \"product_area\": \"teleportation\",\n  \"needs_human\": false,\n  \"confidence\": 0.18\n}",
+  "valid_after_retry": "{\n  \"summary\": \"CSV export columns are in the wrong order on the Reports page.\",\n  \"severity\": \"low\",\n  \"product_area\": \"reports\",\n  \"needs_human\": false,\n  \"confidence\": 0.74\n}"
+}

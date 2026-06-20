@@ -1,0 +1,27 @@
+[
+  {
+    "id": "msg-001",
+    "channel": "email",
+    "text": "Our entire team can't log in this morning — the dashboard just spins and then shows a 500. We have a board demo in two hours. Please help!!!"
+  },
+  {
+    "id": "msg-002",
+    "channel": "in-app",
+    "text": "Hey, small thing: the export-to-CSV button on the Reports page downloads a file with the columns in a weird order. Not urgent, just a bit annoying."
+  },
+  {
+    "id": "msg-003",
+    "channel": "email",
+    "text": "I was charged twice for my October subscription. Card ending 4242. Can you refund the duplicate? Invoice numbers are INV-90122 and INV-90123."
+  },
+  {
+    "id": "msg-004",
+    "channel": "chat",
+    "text": "hi"
+  },
+  {
+    "id": "msg-005",
+    "channel": "email",
+    "text": "Following up on the thing from last week. Did the team get a chance to look? Let me know. Thanks."
+  }
+]

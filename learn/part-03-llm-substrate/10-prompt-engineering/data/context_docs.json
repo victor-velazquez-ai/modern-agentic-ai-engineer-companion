@@ -1,0 +1,17 @@
+[
+  {
+    "id": "doc-refunds",
+    "title": "Refund policy",
+    "text": "Duplicate charges are refunded automatically within 5 business days once support confirms the duplication. Customers do not need to take any action beyond reporting it."
+  },
+  {
+    "id": "doc-invoices",
+    "title": "Finding invoices",
+    "text": "Invoice history lives under Settings > Billing > Invoices. Receipts for the trailing 18 months can be downloaded as PDF from that page."
+  },
+  {
+    "id": "doc-sla",
+    "title": "Support SLA",
+    "text": "Severity-1 incidents (full outage, suspected data exposure) are acknowledged within 15 minutes, 24/7. Lower severities are handled during business hours."
+  }
+]

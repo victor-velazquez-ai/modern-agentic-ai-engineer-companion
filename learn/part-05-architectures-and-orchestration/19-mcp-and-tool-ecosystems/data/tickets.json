@@ -1,0 +1,26 @@
+{
+  "tickets": {
+    "TICK-1001": {
+      "id": "TICK-1001",
+      "title": "SSO login redirect loop",
+      "status": "open",
+      "priority": "high",
+      "assignee": "alex",
+      "history": [
+        "2026-06-18 created by customer acme-corp",
+        "2026-06-18 auto-tagged: auth, sso"
+      ]
+    },
+    "TICK-1002": {
+      "id": "TICK-1002",
+      "title": "Refund request for annual plan",
+      "status": "awaiting-customer",
+      "priority": "normal",
+      "assignee": "priya",
+      "history": [
+        "2026-06-15 created by customer globex",
+        "2026-06-16 agent requested order id"
+      ]
+    }
+  }
+}

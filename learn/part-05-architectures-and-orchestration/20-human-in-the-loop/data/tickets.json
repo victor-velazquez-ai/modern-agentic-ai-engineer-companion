@@ -1,0 +1,18 @@
+{
+  "T-1042": {
+    "id": "T-1042",
+    "subject": "Charged twice for the Pro plan this month",
+    "customer": "ana@example.com",
+    "status": "open",
+    "body": "Hi — I was billed 49 EUR twice on the 3rd. I only have one Pro subscription. Please refund the duplicate charge.",
+    "order_total_eur": 49.0
+  },
+  "T-1043": {
+    "id": "T-1043",
+    "subject": "How do I export my data?",
+    "customer": "lee@example.com",
+    "status": "open",
+    "body": "Where in the dashboard can I export all my projects to CSV? I could not find it under Settings.",
+    "order_total_eur": 0.0
+  }
+}

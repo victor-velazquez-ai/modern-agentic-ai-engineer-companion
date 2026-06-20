@@ -1,0 +1,62 @@
+[
+  {
+    "id": "T-001",
+    "text": "I was charged twice for my Pro subscription this month. Please refund the duplicate.",
+    "category": "billing",
+    "urgency": 3
+  },
+  {
+    "id": "T-002",
+    "text": "The export button throws a 500 error every time I click it on the reports page.",
+    "category": "bug",
+    "urgency": 3
+  },
+  {
+    "id": "T-003",
+    "text": "Could you add dark mode? My eyes would thank you.",
+    "category": "feature_request",
+    "urgency": 1
+  },
+  {
+    "id": "T-004",
+    "text": "Production is down. Nobody on our team can log in. This is blocking 40 people.",
+    "category": "bug",
+    "urgency": 4
+  },
+  {
+    "id": "T-005",
+    "text": "Where do I find my invoice history? I need last quarter's receipts for accounting.",
+    "category": "billing",
+    "urgency": 2
+  },
+  {
+    "id": "T-006",
+    "text": "hi",
+    "category": "other",
+    "urgency": 1
+  },
+  {
+    "id": "T-007",
+    "text": "It would be great if reports could be scheduled to email weekly, but also the current PDF export is broken for me.",
+    "category": "feature_request",
+    "urgency": 2
+  },
+  {
+    "id": "T-008",
+    "text": "Your competitor is cheaper. Why should I stay?",
+    "category": "other",
+    "urgency": 2
+  },
+  {
+    "id": "T-009",
+    "text": "URGENT: customer data appears to be leaking between tenants on the shared dashboard.",
+    "category": "bug",
+    "urgency": 4
+  },
+  {
+    "id": "T-010",
+    "text": "My card expired and the renewal failed. How do I update the payment method?",
+    "category": "billing",
+    "urgency": 2
+  }
+]

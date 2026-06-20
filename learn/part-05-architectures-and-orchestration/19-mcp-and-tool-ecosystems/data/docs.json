@@ -1,0 +1,24 @@
+{
+  "documents": [
+    {
+      "doc_id": "POL-REFUND-001",
+      "title": "Refund Policy",
+      "text": "Customers may request a refund within 30 days of purchase. Refunds for annual plans are prorated from the cancellation date. Refunds are issued to the original payment method within 5-7 business days."
+    },
+    {
+      "doc_id": "POL-SLA-002",
+      "title": "Support SLA",
+      "text": "Priority 'high' tickets receive a first response within 1 business hour. 'normal' within 1 business day. 'low' within 3 business days. SLA timers pause while a ticket is awaiting customer reply."
+    },
+    {
+      "doc_id": "KB-LOGIN-014",
+      "title": "Known Issue: SSO Login Loop",
+      "text": "A redirect loop on SSO login is usually caused by a stale session cookie. Workaround: clear cookies for the auth domain, then re-authenticate. Permanent fix shipped in release 4.2."
+    },
+    {
+      "doc_id": "KB-BILLING-031",
+      "title": "Known Issue: Duplicate Invoice",
+      "text": "Duplicate invoices can occur if a payment webhook is retried. The billing reconciler dedupes within 24 hours; manual duplicates should be voided, not refunded."
+    }
+  ]
+}
