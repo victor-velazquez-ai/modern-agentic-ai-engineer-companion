@@ -270,22 +270,26 @@ def guarded():
 
 log = []
 for step in range(12):
+    entered = "open" if cb.state == "open" else cb.state   # state going in
     try:
         cb.call(guarded); outcome = "ok"
+        entered = cb.last_entered      # 'half-open' if this was the recovery probe
     except RuntimeError:
-        outcome = "fast-fail (open)"   # breaker rejected WITHOUT calling the dep
+        outcome = "fast-fail (rejected)"  # breaker rejected WITHOUT calling the dep
     except ConnectionError:
         outcome = "dep error"
-    log.append((round(clock.t, 1), cb.state, outcome))
+        entered = cb.last_entered      # could be 'closed' (counting) or 'half-open'
+    log.append((round(clock.t, 1), entered, cb.state, outcome))
     clock.sleep(1.0)                   # virtual time marches on
 
-for t, state, outcome in log:
-    print(f"t={t:>4}s  state={state:<9}  {outcome}")
+print(f"{'time':>5}  {'ran-as':<10}  {'after':<10}  outcome")
+for t, entered, after, outcome in log:
+    print(f"t={t:>3}s  {entered:<10}  {after:<10}  {outcome}")
 print()
 print("actual calls that reached the sick dependency:", real_calls["to_dep"],
-      "(far fewer than 12 — the open circuit shielded it)")''' ))
+      "(fewer than 12 — the open circuit shielded it; note the half-open probe at t=4)")''' ))
 
-cells.append(md(r"""**What you just saw.** After 3 failures the breaker **opened** and started fast-failing — note those steps made *no call to the dependency at all*, saving every caller from waiting on a known-dead service. After the cooldown it went **half-open**, probed once the dependency had recovered, and **closed**. The dependency received only a handful of calls instead of all twelve."""))
+cells.append(md(r"""**What you just saw.** Trace the `ran-as` column: a few `closed` failures trip the breaker; then `open` steps **fast-fail without calling the dependency at all**, sparing every caller a wait on a known-dead service. At t=4 the cooldown elapses and one `half-open` **probe** is allowed through — it fails (the dep is still down), so the breaker re-opens. Once the dependency recovers, the next half-open probe succeeds and the breaker **closes**. The dependency saw only a handful of calls instead of all twelve."""))
 
 cells.append(md(r"""> ⚠️ **Pitfall — the cascading failure.** Without these tools the chain is lethal: a *slow* dependency makes its callers pile up waiting, exhausting their threads / connection pools; that makes *them* slow, which takes down *their* callers — until one weak link has collapsed the whole system. Timeouts cap the wait, the circuit breaker stops feeding the sick dep, the **bulkhead** quarantines the damage to one pool, and **backpressure** (reject when a bounded queue is full) pushes slowness back to the caller instead of silently queueing unbounded work. The toolkit exists specifically to break this chain."""))
 

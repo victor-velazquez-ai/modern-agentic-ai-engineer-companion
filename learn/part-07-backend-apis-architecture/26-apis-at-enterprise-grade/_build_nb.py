@@ -506,5 +506,814 @@ def build_2601():
     return finalize(c, "26-01-authn-authz-oauth2-jwt-rbac.ipynb")
 
 
+# ---------------------------------------------------------------------------
+# 26-02 — Self-protection & API conventions
+# ---------------------------------------------------------------------------
+def build_2602():
+    BR = "\U0001F4D3"
+    BRAIN = "\U0001F9E0"
+    CRYSTAL = "\U0001F52E"
+    WRENCH = "\U0001F527"
+    TARGET = "\U0001F3AF"
+    PKG = "\U0001F9F1"
+    BUILD = "\U0001F3D7️"
+    c = []
+
+    c.append(md(
+        "# Rate limits, quotas, structured errors, and cursor pagination\n"
+        "\n"
+        f"> {BR} *Companion to* **Modern Agentic AI Engineer** *· Ch 26 §26.3–§26.4 · type: walkthrough*\n"
+        "\n"
+        "**One-line promise:** make the API defend itself — a per-tenant sliding-window limiter that "
+        "returns `429` + `Retry-After`, daily quotas, a consistent machine-readable error envelope, "
+        "and cursor pagination — all offline against a shared in-memory store standing in for Redis."
+    ))
+
+    c.append(md(
+        f"## {BRAIN} Why this matters\n"
+        "\n"
+        "A public API must protect *itself*. Without limits, one buggy client (or one bad actor) can "
+        "exhaust your capacity, and — because each request here triggers an expensive model call — "
+        "your budget too. **Rate limiting** caps requests per short window; **quotas** cap usage over "
+        "a billing period. Both live in *shared* state so they hold across every server instance, and "
+        "both are keyed *per tenant* so one customer can't starve another.\n"
+        "\n"
+        "The other half of \"enterprise-grade\" is *predictability*: structured errors a client can "
+        "branch on (not prose to string-match), and pagination so a list endpoint never dumps an "
+        "unbounded result. Pick these conventions once and every consumer benefits forever."
+    ))
+
+    c.append(md(
+        "## Objectives & prereqs\n"
+        "\n"
+        "**By the end you can:**\n"
+        "- Implement a sliding-window limiter keyed by API key + user + **tenant**, backed by a shared "
+        "store, returning `429 Too Many Requests` with a correct `Retry-After`.\n"
+        "- Have a client *honor* `Retry-After` and back off — the contract both sides rely on.\n"
+        "- Distinguish a short-window **rate limit** from a per-day **quota**, and enforce both.\n"
+        "- Return a consistent **error envelope** via one exception handler.\n"
+        "- Page a list endpoint with an opaque **cursor**, and explain why offset breaks on changing data.\n"
+        "\n"
+        "**Prereqs:** notebook **26-01** (auth, tenant claim). No API key, no Redis, no network — a "
+        "shared in-memory store stands in for Redis and the clock is faked for determinism."
+    ))
+
+    c.append(code(
+        "# --- Setup: imports, env, and the MOCK switch ---------------------------------\n"
+        "# stdlib only (+ python-dotenv & fastapi from requirements.txt). No network, no Redis.\n"
+        "import os\n"
+        "import json\n"
+        "import time\n"
+        "import base64\n"
+        "import random\n"
+        "import pathlib\n"
+        "from collections import deque, defaultdict\n"
+        "\n"
+        "try:\n"
+        "    from dotenv import load_dotenv\n"
+        "    load_dotenv()\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "\n"
+        'MOCK = os.getenv("COMPANION_MOCK", "1") == "1"\n'
+        "random.seed(26)  # deterministic synthetic data below\n"
+        "\n"
+        "# A shared store stands in for Redis. In production this is a real Redis (or fakeredis in\n"
+        "# tests) so limits hold ACROSS instances; the interface (incr/expiring keys) is the same.\n"
+        "# We also fake the clock so the sliding window is fully deterministic in CI.\n"
+        "class FakeClock:\n"
+        "    def __init__(self, t=1_000_000.0):\n"
+        "        self.t = t\n"
+        "    def now(self):\n"
+        "        return self.t\n"
+        "    def advance(self, seconds):\n"
+        "        self.t += seconds\n"
+        "        return self.t\n"
+        "\n"
+        "clock = FakeClock()\n"
+        'print(f"MOCK mode: {MOCK}  | shared store = in-memory (Redis stand-in); clock faked")'
+    ))
+
+    c.append(md(
+        "## 1 · A sliding-window rate limiter, per tenant (§26.3, " + WRENCH + " Build)\n"
+        "\n"
+        "Key choice: a **sliding window** counts the requests in the last `window` seconds, so it "
+        "doesn't suffer the burst-at-the-boundary problem of fixed windows. We store request "
+        "timestamps per key in the shared store; the key is `tenant:user:api_key` so limits are "
+        "scoped *per tenant* (Ch 28). When the count hits the cap we return how long until the oldest "
+        "request ages out — that number becomes `Retry-After`."
+    ))
+
+    c.append(code(
+        "class SlidingWindowLimiter:\n"
+        '    """Per-key sliding window over a shared store. Returns (allowed, retry_after).\n'
+        "    Backed here by an in-memory dict of deques; in prod, a Redis sorted-set per key.\"\"\"\n"
+        "    def __init__(self, limit: int, window_s: float, clock: FakeClock):\n"
+        "        self.limit = limit\n"
+        "        self.window_s = window_s\n"
+        "        self.clock = clock\n"
+        "        self.hits = defaultdict(deque)  # key -> deque[timestamp]\n"
+        "\n"
+        "    def check(self, key: str):\n"
+        "        now = self.clock.now()\n"
+        "        dq = self.hits[key]\n"
+        "        # drop timestamps older than the window (they no longer count)\n"
+        "        while dq and dq[0] <= now - self.window_s:\n"
+        "            dq.popleft()\n"
+        "        if len(dq) >= self.limit:\n"
+        "            # retry_after = when the oldest in-window hit will expire\n"
+        "            retry_after = self.window_s - (now - dq[0])\n"
+        "            return False, max(1, int(retry_after + 0.999))  # ceil, at least 1s\n"
+        "        dq.append(now)\n"
+        "        return True, 0\n"
+        "\n"
+        "def rate_key(tenant: str, user: str, api_key: str) -> str:\n"
+        '    return f"{tenant}:{user}:{api_key}"\n'
+        "\n"
+        "# 3 requests / 10s, just to make the limit easy to hit in the demo.\n"
+        "limiter = SlidingWindowLimiter(limit=3, window_s=10.0, clock=clock)\n"
+        'print("limiter ready: 3 requests / 10s, keyed by tenant:user:api_key")'
+    ))
+
+    c.append(md(
+        f"{CRYSTAL} **Predict.** With a limit of **3 per 10s**, tenant `acme` sends **5** requests at "
+        "the same instant (the clock doesn't advance). How many get `allowed=True`, and what "
+        "`Retry-After` does the *first rejected* one report? Decide before running."
+    ))
+
+    c.append(code(
+        'key = rate_key("acme", "u_alice", "ak_live_123")\n'
+        "results = []\n"
+        "for i in range(5):\n"
+        "    allowed, retry_after = limiter.check(key)\n"
+        '    results.append((i + 1, allowed, retry_after))\n'
+        'for n, allowed, ra in results:\n'
+        '    verdict = "ALLOW" if allowed else f"429 (Retry-After: {ra}s)"\n'
+        '    print(f"  request {n}: {verdict}")'
+    ))
+
+    c.append(md(
+        "**What you just saw.** The first 3 pass; the 4th and 5th are rejected with `Retry-After: "
+        "10` (nothing has aged out yet, so the full window remains). A *different* tenant has its own "
+        "key and its own fresh budget — one customer can't consume another's."
+    ))
+
+    c.append(md(
+        "## 2 · The client side of the contract: honor `Retry-After` (" + WRENCH + " Build)\n"
+        "\n"
+        "A `429` is only useful if clients respect it. A well-behaved client reads `Retry-After`, "
+        "waits, then retries — instead of hammering and making the overload worse. We simulate that "
+        "loop against the limiter using the faked clock (no real sleeping), so you can watch the "
+        "back-off succeed once the window slides."
+    ))
+
+    c.append(code(
+        "def well_behaved_client(limiter, key, max_tries=4):\n"
+        '    """Try; on 429, advance the (faked) clock by Retry-After and retry."""\n'
+        "    for attempt in range(1, max_tries + 1):\n"
+        "        allowed, retry_after = limiter.check(key)\n"
+        "        if allowed:\n"
+        '            return f"succeeded on attempt {attempt}"\n'
+        '        print(f"  attempt {attempt}: 429, backing off {retry_after}s (honoring Retry-After)")\n'
+        "        limiter.clock.advance(retry_after)  # real client would time.sleep(retry_after)\n"
+        '    return "gave up after backoff budget"\n'
+        "\n"
+        "# The key from section 1 is already at its limit; a polite client backs off and gets in.\n"
+        "print(well_behaved_client(limiter, key))"
+    ))
+
+    c.append(md(
+        "**What you just saw.** After waiting the advertised `Retry-After`, the oldest hits aged out "
+        "of the window and the request succeeded. This is the entire social contract of rate "
+        "limiting: the server says *how long*, the client *waits that long*. A client that ignores "
+        "`Retry-After` and retries immediately just collects more `429`s."
+    ))
+
+    c.append(md(
+        "## 3 · Rate limit ≠ quota (§26.3)\n"
+        "\n"
+        "Two different controls, often confused:\n"
+        "\n"
+        "- **Rate limit** — smooths *bursts*: \"≤ N requests per few seconds.\" Resets continuously.\n"
+        "- **Quota** — caps *total volume per plan*: \"≤ 10,000 requests per day on the Pro plan.\" "
+        "Resets on a calendar boundary; exceeding it usually means *upgrade*, not *wait a moment*.\n"
+        "\n"
+        "Quotas are naturally **per tenant** (it's the customer's plan). Here's a simple per-tenant "
+        "daily counter alongside the limiter."
+    ))
+
+    c.append(code(
+        "class DailyQuota:\n"
+        '    """Per-tenant daily request counter in the shared store. Resets each UTC day."""\n'
+        "    def __init__(self, plan_limits: dict, clock: FakeClock):\n"
+        "        self.plan_limits = plan_limits        # plan -> requests/day\n"
+        "        self.clock = clock\n"
+        "        self.used = defaultdict(int)          # (tenant, day) -> count\n"
+        "\n"
+        "    def _day(self):\n"
+        "        return int(self.clock.now() // 86400)\n"
+        "\n"
+        "    def charge(self, tenant: str, plan: str):\n"
+        "        cap = self.plan_limits[plan]\n"
+        "        slot = (tenant, self._day())\n"
+        "        if self.used[slot] >= cap:\n"
+        '            return False, {"used": self.used[slot], "limit": cap}\n'
+        "        self.used[slot] += 1\n"
+        '        return True, {"used": self.used[slot], "limit": cap}\n'
+        "\n"
+        'quota = DailyQuota({"free": 2, "pro": 10_000}, clock)\n'
+        "# Simulate a free-plan tenant making 3 calls against a daily cap of 2.\n"
+        "for i in range(3):\n"
+        '    ok, info = quota.charge("acme", plan="free")\n'
+        '    state = "OK" if ok else "QUOTA EXCEEDED (upgrade plan)"\n'
+        '    print(f"  call {i + 1}: {state}  used={info[\'used\']}/{info[\'limit\']}")'
+    ))
+
+    c.append(md(
+        "**What you just saw.** The third call is refused — not because of a *burst*, but because the "
+        "*daily* allotment is spent. The right client response differs too: back off for a rate "
+        "limit, upgrade (or wait until tomorrow) for a quota. Same `429`/`402` family, different "
+        "remedy — which is exactly why your error body must say *which* it is."
+    ))
+
+    c.append(md(
+        "## 4 · One structured error envelope (§26.4, " + WRENCH + " Build)\n"
+        "\n"
+        "Clients should branch on a stable **code**, never on your prose. The book's envelope:\n"
+        "\n"
+        "```json\n"
+        '{ "error": { "code": "rate_limited", "message": "Too many requests.", "retry_after": 30 } }\n'
+        "```\n"
+        "\n"
+        "Wire it once as a FastAPI exception handler so *every* error — yours and the framework's — "
+        "comes out in the same shape. Now we mount the limiter as real middleware-ish dependency on a "
+        "route and watch the `429` carry both the header and the envelope."
+    ))
+
+    c.append(code(
+        "from fastapi import FastAPI, Depends, HTTPException, Header, Query\n"
+        "from fastapi.responses import JSONResponse\n"
+        "from fastapi.testclient import TestClient\n"
+        "\n"
+        'app = FastAPI(title="Agent API", version="1.0.0")\n'
+        "\n"
+        "class APIError(HTTPException):\n"
+        '    """Carries a stable machine code + optional retry_after into the envelope."""\n'
+        "    def __init__(self, status_code: int, code: str, message: str, retry_after: int | None = None):\n"
+        "        super().__init__(status_code=status_code, detail=message)\n"
+        "        self.code = code\n"
+        "        self.retry_after = retry_after\n"
+        "\n"
+        "@app.exception_handler(APIError)\n"
+        "def api_error_handler(request, exc: APIError):\n"
+        '    body = {"error": {"code": exc.code, "message": exc.detail}}\n'
+        "    headers = {}\n"
+        "    if exc.retry_after is not None:\n"
+        '        body["error"]["retry_after"] = exc.retry_after\n'
+        '        headers["Retry-After"] = str(exc.retry_after)\n'
+        "    return JSONResponse(status_code=exc.status_code, content=body, headers=headers)\n"
+        "\n"
+        "# Fresh limiter for the endpoint demo (2 req / 60s) on its own clock.\n"
+        "ep_clock = FakeClock()\n"
+        "ep_limiter = SlidingWindowLimiter(limit=2, window_s=60.0, clock=ep_clock)\n"
+        "\n"
+        "def enforce_rate_limit(\n"
+        '    x_tenant: str = Header(default="acme"),\n'
+        '    x_user: str = Header(default="u_alice"),\n'
+        '    x_api_key: str = Header(default="ak_live_123"),\n'
+        "):\n"
+        "    allowed, retry_after = ep_limiter.check(rate_key(x_tenant, x_user, x_api_key))\n"
+        "    if not allowed:\n"
+        '        raise APIError(429, "rate_limited", "Too many requests.", retry_after=retry_after)\n'
+        '    return {"tenant": x_tenant, "user": x_user}\n'
+        "\n"
+        '@app.get("/v1/ping")\n'
+        "def ping(ctx: dict = Depends(enforce_rate_limit)):\n"
+        '    return {"ok": True, **ctx}\n'
+        "\n"
+        "client = TestClient(app)\n"
+        'for i in range(3):\n'
+        '    r = client.get("/v1/ping")\n'
+        '    print(f"  request {i + 1}: HTTP {r.status_code}  Retry-After={r.headers.get(\'Retry-After\')}  body={r.json()}")'
+    ))
+
+    c.append(md(
+        "**What you just saw.** The third call returns `429`, a `Retry-After` header, **and** the "
+        "envelope `{\"error\": {\"code\": \"rate_limited\", ...}}`. A client reads `error.code`, sees "
+        "`rate_limited`, and runs its back-off path — no string-matching, no guesswork. Every error "
+        "in the service now shares this shape."
+    ))
+
+    c.append(md(
+        "## 5 · Cursor pagination — never return an unbounded list (§26.4, " + WRENCH + " Build)\n"
+        "\n"
+        "⚠️ **Pitfall: the unbounded list.** A `GET /messages` that returns *everything* is a "
+        "latency bomb and a memory bomb waiting for the dataset to grow. Always paginate. We use a "
+        "**cursor** (an opaque token encoding \"start after id X\") rather than `?offset=`, because "
+        "offset *skips by position* — when rows are inserted or deleted between pages, offset "
+        "silently repeats or drops items. A cursor pins to a stable key, so it's correct on a "
+        "changing dataset."
+    ))
+
+    c.append(code(
+        "# Generate 200 synthetic messages (newest first) -- committed-size data made in-cell.\n"
+        "MESSAGES = [\n"
+        '    {"id": 1000 - i, "tenant": "acme", "text": f"message #{1000 - i}"}\n'
+        "    for i in range(200)\n"
+        "]  # ids 1000..801, descending\n"
+        "\n"
+        "def encode_cursor(last_id: int) -> str:\n"
+        '    return base64.urlsafe_b64encode(json.dumps({"after": last_id}).encode()).decode()\n'
+        "\n"
+        "def decode_cursor(cursor: str) -> int:\n"
+        '    return json.loads(base64.urlsafe_b64decode(cursor.encode()))["after"]\n'
+        "\n"
+        "@app.get(\"/v1/messages\")\n"
+        "def list_messages(limit: int = Query(default=50, le=100), cursor: str | None = None):\n"
+        '    """Cursor pagination: page by `id < after`, newest first. limit is CAPPED at 100."""\n'
+        "    after = decode_cursor(cursor) if cursor else None\n"
+        "    rows = MESSAGES if after is None else [m for m in MESSAGES if m[\"id\"] < after]\n"
+        "    page = rows[:limit]\n"
+        "    next_cursor = encode_cursor(page[-1][\"id\"]) if len(rows) > limit and page else None\n"
+        '    return {"data": page, "next_cursor": next_cursor}\n'
+        "\n"
+        "# Walk the first two pages of 50.\n"
+        'p1 = client.get("/v1/messages?limit=50").json()\n'
+        'print("page 1:", len(p1["data"]), "rows, ids", p1["data"][0]["id"], "->", p1["data"][-1]["id"], "| next?", bool(p1["next_cursor"]))\n'
+        'p2 = client.get(f"/v1/messages?limit=50&cursor={p1[\'next_cursor\']}").json()\n'
+        'print("page 2:", len(p2["data"]), "rows, ids", p2["data"][0]["id"], "->", p2["data"][-1]["id"], "| next?", bool(p2[\'next_cursor\']))\n'
+        "# The cap holds even if a client asks for more:\n"
+        'capped = client.get("/v1/messages?limit=999")\n'
+        'print("limit=999 ->", "HTTP", capped.status_code, "(422: limit must be <= 100, never unbounded)")'
+    ))
+
+    c.append(md(
+        "**What you just saw.** Page 1 returns ids 1000→951, page 2 continues 950→901 via the "
+        "cursor, and `limit=999` is *rejected* (`422`) because the schema caps it at 100. There is no "
+        "way to ask this endpoint for an unbounded list — the pitfall is closed by construction."
+    ))
+
+    c.append(md(
+        f"## {TARGET} Senior lens\n"
+        "\n"
+        "The expensive mistake here is *inconsistency*. Pick your conventions **once** and apply them "
+        "everywhere: cursor (not offset) pagination, the single `{\"error\": {\"code\", ...}}` "
+        "envelope, `snake_case` fields, ISO-8601 **UTC** timestamps, and `Retry-After` on every "
+        "`429`. Every inconsistency is a tax each client pays forever — extra docs to read, extra "
+        "branches to write, extra integration bugs. \n"
+        "\n"
+        "Two more senior notes. First, put the limiter's state in a *shared* store (Redis) from day "
+        "one, even with a single instance — the day you scale out, an in-process counter silently "
+        "lets through N× your limit. Second, decide your limiter's *failure mode*: if Redis is down, "
+        "do you *fail open* (serve, risk overload) or *fail closed* (reject, risk an outage)? There's "
+        "no universal answer, but there must be a *decision*, not an accident."
+    ))
+
+    c.append(md(
+        "## Recap\n"
+        "\n"
+        "- A **sliding-window** limiter keyed by `tenant:user:api_key` returns `429` + `Retry-After`; "
+        "the window slides so bursts at the boundary don't slip through.\n"
+        "- The contract is two-sided: the server says *how long*, a well-behaved client **honors** "
+        "`Retry-After`.\n"
+        "- **Rate limit** (bursts, resets continuously) ≠ **quota** (per-plan volume, resets daily) — "
+        "different remedies: back off vs upgrade.\n"
+        "- One **error envelope** (`{\"error\": {\"code\", \"message\", \"retry_after\"}}`) via a "
+        "single handler; clients branch on `code`, not prose.\n"
+        "- **Cursor pagination** with a capped `limit` makes an unbounded list impossible and stays "
+        "correct on changing data where offset doesn't.\n"
+        "- Pick conventions once; **shared state** for limits; choose fail-open vs fail-closed "
+        "deliberately."
+    ))
+
+    c.append(md(
+        "## Exercises\n"
+        "\n"
+        "Predict the result before running each.\n"
+        "\n"
+        "1. **Window slide.** After hitting the limit in section 1, `clock.advance(5)` then check "
+        "again — still `429`? Now advance another `6`s and check. Explain the `Retry-After` you'd "
+        "expect at each step.\n"
+        "2. **Token bucket vs sliding window.** Re-implement the limiter as a token bucket "
+        "(capacity + refill rate). Which one allows a short burst above the average rate, and why "
+        "might you *want* that for a bursty client?\n"
+        "3. **Quota header.** Add `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers to the "
+        "`/v1/ping` response. What should `Reset` be relative to — the window or the wall clock?\n"
+        "4. **Offset breaks.** Build an offset-paginated version of `/v1/messages`, fetch page 1, "
+        "*insert* a new newest message, then fetch page 2 by offset. Show the duplicate/skip. Why is "
+        "the cursor immune?"
+    ))
+
+    c.append(code("# Exercise 1 -- your code here\n"))
+    c.append(code("# Exercise 2 -- your code here\n"))
+    c.append(code("# Exercise 3 -- your code here\n"))
+    c.append(code("# Exercise 4 -- your code here\n"))
+
+    c.append(md(
+        "## Next\n"
+        "\n"
+        "- ⬅️ **Previous:** [`26-01-authn-authz-oauth2-jwt-rbac.ipynb`](./26-01-authn-authz-oauth2-jwt-rbac.ipynb).\n"
+        "- ➡️ **Next notebook:** [`26-03-webhooks-and-openapi-contracts.ipynb`]"
+        "(./26-03-webhooks-and-openapi-contracts.ipynb) — notify other systems reliably (signed, "
+        "retried, idempotent webhooks) and gate API changes with a contract test against OpenAPI.\n"
+        f"- {BR} **Book:** §26.3 (rate limiting, quotas, multi-tenancy) and §26.4 (pagination, "
+        "filtering, errors).\n"
+        f"- {PKG} **Template:** the limiter middleware and error envelope become defaults in "
+        "[`templates/fastapi-agent-service/`](../../../templates/fastapi-agent-service/); structured "
+        "errors + request context feed [`blueprints/observability-stack/`](../../../blueprints/observability-stack/).\n"
+        f"- {BUILD} **Capstone:** per-tenant limits wrap `capstone/app/` (checkpoint `ch26-enterprise-api`)."
+    ))
+
+    return finalize(c, "26-02-rate-limiting-quotas-errors-pagination.ipynb")
+
+
+# ---------------------------------------------------------------------------
+# 26-03 — Outbound events + contract testing
+# ---------------------------------------------------------------------------
+def build_2603():
+    BR = "\U0001F4D3"
+    BRAIN = "\U0001F9E0"
+    CRYSTAL = "\U0001F52E"
+    WRENCH = "\U0001F527"
+    TARGET = "\U0001F3AF"
+    PKG = "\U0001F9F1"
+    BUILD = "\U0001F3D7️"
+    c = []
+
+    c.append(md(
+        "# Webhooks (signed, retried, idempotent) + OpenAPI contract tests\n"
+        "\n"
+        f"> {BR} *Companion to* **Modern Agentic AI Engineer** *· Ch 26 §26.5–§26.6 · type: walkthrough*\n"
+        "\n"
+        "**One-line promise:** deliver outbound events the way you'd want to receive them — HMAC-"
+        "signed, retried with backoff, idempotent on the consumer — then turn FastAPI's generated "
+        "`openapi.json` into a contract test that fails the moment a field is renamed. All in-process."
+    ))
+
+    c.append(md(
+        f"## {BRAIN} Why this matters\n"
+        "\n"
+        "Not every interaction is request→response. Sometimes *your* system must notify *theirs* — a "
+        "long agent run finished, a document finished processing. That's a **webhook**: you `POST` an "
+        "event to a URL the consumer registered. Three properties make webhooks trustworthy, and "
+        "they're the same rigor you apply to your inbound API: **sign** them (so the receiver knows "
+        "it's really you), **retry** them (the receiver may be briefly down — at-least-once "
+        "delivery), and make the consumer **idempotent** (because at-least-once means you *will* send "
+        "duplicates).\n"
+        "\n"
+        "The other source of truth in an enterprise API is the **OpenAPI spec** FastAPI generates for "
+        "free. Pin it as a contract and a CI test catches breaking changes *before* they ship and "
+        "break every client."
+    ))
+
+    c.append(md(
+        "## Objectives & prereqs\n"
+        "\n"
+        "**By the end you can:**\n"
+        "- Sign a webhook payload with an **HMAC** and have a receiver reject a *tampered* body.\n"
+        "- Deliver with **retry + backoff** to a flaky receiver and reason about at-least-once.\n"
+        "- Make the *consumer* **idempotent** with an idempotency key so a redelivered event is "
+        "harmless (the Ch 24 pattern).\n"
+        "- Dump FastAPI's `openapi.json` and write a **contract test** that fails when a field is "
+        "renamed or removed.\n"
+        "\n"
+        "**Prereqs:** notebook **26-02**; Ch 24 (idempotency). Foreshadows Ch 29 (retries / "
+        "at-least-once) and Ch 31 (n8n automations consuming these events). No network, no real "
+        "outbound HTTP — receiver and delivery loop are in-process; the clock is faked."
+    ))
+
+    c.append(code(
+        "# --- Setup: imports, env, and the MOCK switch ---------------------------------\n"
+        "# stdlib only (+ python-dotenv & fastapi from requirements.txt). No outbound HTTP.\n"
+        "import os\n"
+        "import json\n"
+        "import hmac\n"
+        "import hashlib\n"
+        "import random\n"
+        "import pathlib\n"
+        "\n"
+        "try:\n"
+        "    from dotenv import load_dotenv\n"
+        "    load_dotenv()\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "\n"
+        'MOCK = os.getenv("COMPANION_MOCK", "1") == "1"\n'
+        "random.seed(26)  # deterministic 'flaky receiver' schedule below\n"
+        "\n"
+        "# The signing secret comes from the environment ONLY. Dev fallback so the notebook runs\n"
+        "# with no setup; a real sender shares this secret with the receiver out of band.\n"
+        'WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "whsec_dev-only-not-real")\n'
+        "\n"
+        'DATA = pathlib.Path("data")\n'
+        'sample_event = json.loads((DATA / "webhook-event.json").read_text())\n'
+        'print(f"MOCK mode: {MOCK}  | webhook secret from env: {\'WEBHOOK_SECRET\' in os.environ}")\n'
+        'print("sample event:", sample_event["type"], "->", sample_event["data"]["run_id"])'
+    ))
+
+    c.append(md(
+        "## 1 · Sign the payload so the receiver can trust it (§26.6, " + WRENCH + " Build)\n"
+        "\n"
+        "A webhook arrives at a public URL — anyone could `POST` to it. The fix is a shared-secret "
+        "**HMAC** over the *exact bytes* of the body, sent in a header (Stripe/GitHub call it "
+        "`X-Signature`). The receiver recomputes the HMAC over what it received and compares in "
+        "constant time. Any change to the body changes the signature, so a tampered payload is "
+        "rejected."
+    ))
+
+    c.append(code(
+        "def sign_payload(body: bytes, secret: str) -> str:\n"
+        '    """HMAC-SHA256 over the raw body bytes -> hex digest (the X-Signature header)."""\n'
+        "    return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()\n"
+        "\n"
+        "def verify_signature(body: bytes, signature: str, secret: str) -> bool:\n"
+        "    expected = sign_payload(body, secret)\n"
+        "    return hmac.compare_digest(expected, signature)  # constant-time\n"
+        "\n"
+        "# Serialize ONCE; sign and send the same bytes (re-serializing can reorder keys!).\n"
+        'body = json.dumps(sample_event, separators=(",", ":"), sort_keys=True).encode()\n'
+        "sig = sign_payload(body, WEBHOOK_SECRET)\n"
+        'print("signature:", sig[:32], "...")\n'
+        'print("verify untampered:", verify_signature(body, sig, WEBHOOK_SECRET))'
+    ))
+
+    c.append(md(
+        f"{CRYSTAL} **Predict.** An attacker intercepts the event and flips the run's `status` from "
+        "`succeeded` to `failed`, but **can't** recompute the HMAC (no secret). Does "
+        "`verify_signature` on the tampered body return `True` or `False`? Decide before running."
+    ))
+
+    c.append(code(
+        "tampered = dict(sample_event)\n"
+        'tampered_data = dict(sample_event["data"])\n'
+        'tampered_data["status"] = "failed"            # the attacker\'s edit\n'
+        'tampered["data"] = tampered_data\n'
+        'tampered_body = json.dumps(tampered, separators=(",", ":"), sort_keys=True).encode()\n'
+        "\n"
+        "# The attacker forwards the ORIGINAL signature (they can't make a valid new one).\n"
+        "print(\"verify tampered body w/ original sig:\", verify_signature(tampered_body, sig, WEBHOOK_SECRET))"
+    ))
+
+    c.append(md(
+        "**What you just saw.** `False` — the receiver recomputes the HMAC over the *bytes it got*, "
+        "which no longer match the signature, so it rejects the event. Without the secret, an "
+        "attacker can read or replay but cannot *forge*. (Replay is handled next, by idempotency.)"
+    ))
+
+    c.append(md(
+        "## 2 · Deliver with retry + backoff to a flaky receiver (§26.6, " + WRENCH + " Build)\n"
+        "\n"
+        "The receiver might be briefly down (deploy, blip). **At-least-once** delivery means: retry "
+        "with backoff until it succeeds or you exhaust the budget — then dead-letter it. We model a "
+        "receiver that fails its first two attempts (e.g. `503`) and succeeds on the third, and a "
+        "sender that backs off between tries (clock faked, no real sleeping)."
+    ))
+
+    c.append(code(
+        "class FlakyReceiver:\n"
+        '    """Verifies the signature, then fails `fail_times` before succeeding (503)."""\n'
+        "    def __init__(self, fail_times: int, secret: str):\n"
+        "        self.left = fail_times\n"
+        "        self.secret = secret\n"
+        "        self.deliveries = []   # bodies that were ACCEPTED (after a 200)\n"
+        "    def receive(self, body: bytes, signature: str) -> int:\n"
+        "        if not verify_signature(body, signature, self.secret):\n"
+        "            return 401  # bad signature -> reject, do NOT process\n"
+        "        if self.left > 0:\n"
+        "            self.left -= 1\n"
+        "            return 503  # transient: please retry\n"
+        "        self.deliveries.append(body)\n"
+        "        return 200\n"
+        "\n"
+        "def deliver_with_retry(receiver, body, signature, *, max_attempts=5, base=1.0):\n"
+        '    """At-least-once delivery: retry transient failures with exponential backoff."""\n'
+        "    delays = []\n"
+        "    for attempt in range(1, max_attempts + 1):\n"
+        "        status = receiver.receive(body, signature)\n"
+        "        if status == 200:\n"
+        '            return {"ok": True, "attempts": attempt, "delays": delays}\n'
+        "        if status == 401:\n"
+        '            return {"ok": False, "attempts": attempt, "reason": "bad signature (no retry)"}\n'
+        "        if attempt < max_attempts:\n"
+        "            backoff = base * (2 ** (attempt - 1))\n"
+        "            delays.append(backoff)        # real sender would time.sleep(backoff)\n"
+        '    return {"ok": False, "attempts": max_attempts, "reason": "exhausted (dead-letter it)"}\n'
+        "\n"
+        "receiver = FlakyReceiver(fail_times=2, secret=WEBHOOK_SECRET)\n"
+        'print("delivering... (receiver fails twice, then 200)")'
+    ))
+
+    c.append(md(
+        f"{CRYSTAL} **Predict.** The receiver fails the first **2** attempts, then returns `200`. How "
+        "many *total* attempts before success, and what backoff delays were used between them "
+        "(base 1s, doubling)? Decide before running."
+    ))
+
+    c.append(code(
+        "result = deliver_with_retry(receiver, body, sig)\n"
+        "print(result)\n"
+        'print("accepted deliveries at receiver:", len(receiver.deliveries))'
+    ))
+
+    c.append(md(
+        "**What you just saw.** Three attempts: fail (wait 1s), fail (wait 2s), succeed. The event "
+        "was delivered exactly once *to the application* here — but at-least-once means that in the "
+        "real world a `200` can be lost on the way back, and you'd retry an *already-processed* "
+        "event. That's the next problem."
+    ))
+
+    c.append(md(
+        "## 3 · ⚠️ Pitfall: a non-idempotent consumer (the Ch 24 fix, " + WRENCH + " Build)\n"
+        "\n"
+        "At-least-once delivery **guarantees** the consumer will eventually see duplicates — a "
+        "retried event whose previous `200` was lost in transit. If the handler isn't idempotent, a "
+        "duplicate \"run completed\" event might charge the customer twice or kick off the downstream "
+        "automation twice. The fix is the Ch 24 idempotency key: dedupe on the event id so a "
+        "redelivery is a harmless no-op."
+    ))
+
+    c.append(code(
+        "# A non-idempotent handler: every delivery triggers the side effect.\n"
+        "charges_naive = []\n"
+        "def handle_naive(event):\n"
+        '    charges_naive.append(event["data"]["run_id"])   # side effect: bill the run\n'
+        "\n"
+        "# Same event delivered THREE times (at-least-once duplicates).\n"
+        "for _ in range(3):\n"
+        "    handle_naive(sample_event)\n"
+        'print("naive handler -> charges fired:", len(charges_naive), "(duplicated!)")\n'
+        "\n"
+        "# The idempotent handler: dedupe on the event id (its idempotency key).\n"
+        "_seen = set()\n"
+        "charges_idem = []\n"
+        "def handle_idempotent(event):\n"
+        '    key = event["id"]                 # stable per logical event, not per delivery\n'
+        "    if key in _seen:\n"
+        "        return  # already processed -> no-op (the whole point)\n"
+        "    _seen.add(key)\n"
+        '    charges_idem.append(event["data"]["run_id"])\n'
+        "\n"
+        "for _ in range(3):\n"
+        "    handle_idempotent(sample_event)\n"
+        'print("idempotent handler -> charges fired:", len(charges_idem), "(exactly once)")\n'
+        'assert len(charges_idem) == 1, "idempotency must collapse redeliveries to one effect"'
+    ))
+
+    c.append(md(
+        "**What you just saw.** Same three deliveries: the naive handler billed the run **3×**; the "
+        "idempotent handler billed it **once** and ignored the replays. Sign + retry + idempotent "
+        "is the trio — you can't safely have at-least-once delivery without an idempotent consumer."
+    ))
+
+    c.append(md(
+        "## 4 · The OpenAPI spec as a contract test (§26.5, " + WRENCH + " Build)\n"
+        "\n"
+        "FastAPI generates an **OpenAPI** description of every endpoint for free. Treat it as the "
+        "single source of truth: snapshot it, and a tiny **contract test** fails the build the moment "
+        "a field or path is renamed/removed — catching a breaking change in CI before it ships and "
+        "breaks every client (and it's the basis for generated SDKs). We build a small app, dump its "
+        "`openapi.json`, and diff it against the committed baseline in `data/`."
+    ))
+
+    c.append(code(
+        "from fastapi import FastAPI\n"
+        "from pydantic import BaseModel\n"
+        "\n"
+        'app = FastAPI(title="Agent API", version="1.0.0")\n'
+        "\n"
+        "class RunRequest(BaseModel):\n"
+        "    agent: str\n"
+        "    prompt: str\n"
+        "\n"
+        "class Run(BaseModel):\n"
+        "    run_id: str\n"
+        "    status: str\n"
+        "\n"
+        '@app.post("/v1/runs", operation_id="create_run")\n'
+        "def create_run(req: RunRequest) -> Run:\n"
+        '    return Run(run_id="run_8a21", status="queued")\n'
+        "\n"
+        '@app.get("/v1/runs/{run_id}", operation_id="get_run")\n'
+        "def get_run(run_id: str) -> Run:\n"
+        '    return Run(run_id=run_id, status="succeeded")\n'
+        "\n"
+        "spec = app.openapi()\n"
+        'print("generated paths:", sorted(spec["paths"].keys()))\n'
+        'print("operationIds:", sorted(op["operationId"]\n'
+        '                              for p in spec["paths"].values() for op in p.values()))'
+    ))
+
+    c.append(code(
+        "# A focused contract test: paths + operationIds + path params must not silently change.\n"
+        "def contract_surface(spec: dict) -> set:\n"
+        '    """Reduce a spec to the surface clients depend on: (method, path, operationId)."""\n'
+        "    surface = set()\n"
+        '    for path, ops in spec["paths"].items():\n'
+        "        for method, op in ops.items():\n"
+        '            surface.add((method.upper(), path, op.get("operationId")))\n'
+        "    return surface\n"
+        "\n"
+        'baseline = json.loads((DATA / "openapi-baseline.json").read_text())\n'
+        "current = contract_surface(spec)\n"
+        "expected = contract_surface(baseline)\n"
+        "\n"
+        "missing = expected - current      # something the baseline promised is gone -> BREAKING\n"
+        "added = current - expected        # new surface -> usually safe, but flag it\n"
+        'print("removed/renamed (BREAKING):", missing or "none")\n'
+        'print("added (review):", added or "none")\n'
+        'assert not missing, f"contract broke: {missing}"\n'
+        'print("\\ncontract test PASSED -- current API still satisfies the committed contract")'
+    ))
+
+    c.append(md(
+        f"{CRYSTAL} **Predict.** Suppose a teammate renames the field `run_id` to `id` (or changes "
+        "`operation_id=\"get_run\"` to `\"fetch_run\"`). Will the contract test above pass or fail, "
+        "and *which* set — `missing` or `added` — catches it? Think it through, then try it in "
+        "Exercise 2."
+    ))
+
+    c.append(md(
+        "**What you just saw.** The current API still satisfies the committed contract, so the test "
+        "passes. Rename a path or `operationId` and `missing` becomes non-empty — the assertion "
+        "fails, the CI job goes red, and the breaking change is stopped *before* it reaches a single "
+        "consumer. This same spec is what SDK generators consume to emit typed clients."
+    ))
+
+    c.append(md(
+        f"## {TARGET} Senior lens\n"
+        "\n"
+        "Treat **outbound** events with the same rigor as your **inbound** API. The asymmetry is "
+        "seductive: the inbound API is obviously a contract — it has docs, tests, versioning — while "
+        "webhooks feel like fire-and-forget. They aren't. An unsigned webhook is an open door; an "
+        "un-retried one silently drops events the first time the receiver hiccups; a non-idempotent "
+        "consumer double-charges on the inevitable duplicate. Each of those quietly erodes the trust "
+        "that makes an integration valuable.\n"
+        "\n"
+        "So: sign them, retry with backoff and a dead-letter, make consumers idempotent, version the "
+        "payload (`type` + a schema), and — yes — contract-test the *event* shape too, not just the "
+        "REST surface. The difference between a platform partners build on and one they rip out is "
+        "exactly this rigor applied to the events nobody sees until they break."
+    ))
+
+    c.append(md(
+        "## Recap\n"
+        "\n"
+        "- A webhook is *your* system `POST`-ing an event to a URL the consumer registered — for "
+        "work that finishes asynchronously (a long agent run).\n"
+        "- **Sign** the raw body with an HMAC; the receiver recomputes and compares in constant time, "
+        "rejecting any tampered payload.\n"
+        "- **Retry with backoff** for at-least-once delivery; exhaustion means dead-letter, not "
+        "silent drop.\n"
+        "- At-least-once **guarantees** duplicates, so the **consumer must be idempotent** — dedupe "
+        "on the event id (the Ch 24 key).\n"
+        "- FastAPI's generated **OpenAPI** spec is a contract: snapshot it and a tiny test fails CI "
+        "when a path/field is renamed or removed — and it powers SDK generation.\n"
+        "- Outbound events deserve the same rigor as the inbound API: signed, retried, idempotent, "
+        "versioned, contract-tested."
+    ))
+
+    c.append(md(
+        "## Exercises\n"
+        "\n"
+        "Predict the result before running each.\n"
+        "\n"
+        "1. **Exhaust the budget.** Set `FlakyReceiver(fail_times=10)` with `max_attempts=5`. What "
+        "does `deliver_with_retry` return, and what are the backoff delays? Where would a real system "
+        "send the event next (hint: dead-letter queue)?\n"
+        "2. **Break the contract.** Rename `operation_id=\"get_run\"` to `\"fetch_run\"`, regenerate "
+        "the spec, and re-run the contract test. Which set (`missing`/`added`) trips, and what "
+        "exception surfaces?\n"
+        "3. **Replay window.** Add a `timestamp` to the signature input and have the receiver reject "
+        "events older than 5 minutes. Why does signing the timestamp (not just the body) matter for "
+        "replay protection?\n"
+        "4. **Idempotency key choice.** Change `handle_idempotent` to key on "
+        "`event[\"data\"][\"run_id\"]` instead of `event[\"id\"]`. Construct two *different* events "
+        "for the same run and predict whether the second is wrongly dropped. Why must the key match "
+        "the *logical event*, not the entity?"
+    ))
+
+    c.append(code("# Exercise 1 -- your code here\n"))
+    c.append(code("# Exercise 2 -- your code here\n"))
+    c.append(code("# Exercise 3 -- your code here\n"))
+    c.append(code("# Exercise 4 -- your code here\n"))
+
+    c.append(md(
+        "## Next\n"
+        "\n"
+        "- ⬅️ **Previous:** [`26-02-rate-limiting-quotas-errors-pagination.ipynb`](./26-02-rate-limiting-quotas-errors-pagination.ipynb).\n"
+        "- ➡️ **Part VIII** takes this enterprise-grade API to the cloud; **Ch 29** revisits retries / "
+        "at-least-once in depth, and **Ch 31** consumes these webhooks in n8n automations.\n"
+        f"- {BR} **Book:** §26.5 (OpenAPI, contract testing, SDKs) and §26.6 (webhooks, event-driven APIs).\n"
+        f"- {PKG} **Template:** the webhook sender (sign + retry) and contract test become defaults in "
+        "[`templates/fastapi-agent-service/`](../../../templates/fastapi-agent-service/).\n"
+        f"- {BUILD} **Capstone:** signed webhooks connect `capstone/app/` to `capstone/workers/` "
+        "automations (checkpoint `ch26-enterprise-api`)."
+    ))
+
+    return finalize(c, "26-03-webhooks-and-openapi-contracts.ipynb")
+
+
 if __name__ == "__main__":
     print(build_2601())
+    print(build_2602())
+    print(build_2603())
