@@ -128,10 +128,10 @@ cells.append(code(
     return chunks
 
 
-# Use a SMALL budget so this little corpus produces several chunks to inspect.
-chunks = chunk(document, max_tokens=60, overlap=20)
-print(f"{len(chunks)} chunks")
-for i, c in enumerate(chunks):
+# A SMALL budget makes this tiny corpus produce several chunks to inspect the mechanics.
+demo_chunks = chunk(document, max_tokens=60, overlap=20)
+print(f"{len(demo_chunks)} chunks at max_tokens=60")
+for i, c in enumerate(demo_chunks):
     print(f"\\n--- chunk {i}  (~{len(c)//4} tokens, {len(c)} chars) ---")
     print(c[:200])'''
 ))
@@ -158,13 +158,30 @@ for c in naive[2:5]:
     print("  |", repr(c))
 
 print("\\nSTRUCTURE-AWARE split (paragraph boundaries kept intact):")
-sample = random.sample(range(len(chunks)), k=min(3, len(chunks)))
+sample = random.sample(range(len(demo_chunks)), k=min(3, len(demo_chunks)))
 for i in sorted(sample):
-    print(f"  | chunk {i}: {chunks[i][:90]!r}")'''
+    print(f"  | chunk {i}: {demo_chunks[i][:90]!r}")'''
 ))
 
 cells.append(md(
-"""## 3. Embed chunks and the query, rank by cosine similarity
+"""## 3. The retrieval corpus
+
+For the rest of the pipeline we retrieve over **one clean chunk per source snippet** — each is
+already a self-contained, document-sized unit, exactly the `{id, text, source}` shape a real
+parse-and-chunk stage emits (and what Notebook 13-02 indexes). Keeping a literal identifier in
+*one* chunk is what lets us see hybrid search rescue it below."""
+))
+
+cells.append(code(
+'''chunks = [r["text"] for r in records]
+ids = [r["id"] for r in records]
+print(f"{len(chunks)} retrieval chunks (one per snippet):")
+for i, c in enumerate(chunks):
+    print(f"  [{i}] {ids[i]:<12} {c[:55]!r}")'''
+))
+
+cells.append(md(
+"""## 4. Embed chunks and the query, rank by cosine similarity
 
 An embedding model maps text to a vector so that similar meanings land near each other.
 Retrieval is then geometry: embed the query, find the nearest chunk vectors, return their
@@ -242,7 +259,7 @@ print("topically near-identical. Semantic match != relevance -- this gap is why 
 ))
 
 cells.append(md(
-"""## 4. Hybrid search: add BM25, fuse with RRF
+"""## 5. Hybrid search: add BM25, fuse with RRF
 
 Embeddings are bad at exactly what keyword search is good at: identifiers, error codes, SKUs.
 A query for `ERR_QUOTA_42` should match the one chunk containing that literal string, but its
@@ -312,7 +329,7 @@ for i, s in rrf_fuse(q3, chunks, k=3):
 ))
 
 cells.append(md(
-"""## 5. Rerank the candidates with a cross-encoder
+"""## 6. Rerank the candidates with a cross-encoder
 
 Bi-encoder retrieval (embed query and chunks separately) is fast but coarse. A
 **cross-encoder reranker** reads the query and a candidate *together* and scores actual
