@@ -1,0 +1,11 @@
+{"chunk_id": "doc-refund-1", "text": "Refunds are issued only for verified duplicate charges or documented billing errors. A refund cannot exceed the original charge."}
+{"chunk_id": "doc-refund-2", "text": "To request a refund, support must first look up the account's invoices and confirm a duplicate or error before promising any amount."}
+{"chunk_id": "doc-cancel-1", "text": "Cancelling a plan stops future billing at the end of the current cycle. Charges billed after a confirmed cancellation date are refundable."}
+{"chunk_id": "doc-export-1", "text": "To export your data to CSV, open Settings, choose Data, then click Export. The CSV includes all records visible to your account."}
+{"chunk_id": "doc-export-2", "text": "Exports are generated asynchronously; you receive an email with a download link when the file is ready."}
+{"chunk_id": "doc-notif-1", "text": "To change your notification email, go to Settings, then Profile, then Notifications, and update the address."}
+{"chunk_id": "doc-seat-1", "text": "Adding a seat increases the monthly bill by the per-seat price, prorated from the day the seat was added."}
+{"chunk_id": "doc-latefee-1", "text": "A late fee of $5 applies when an invoice is unpaid past its due date. Late fees are only waived for a documented billing error."}
+{"chunk_id": "doc-history-1", "text": "All past invoices are listed under Billing then History, sorted by date, with a status of PAID, DUE, or REFUNDED."}
+{"chunk_id": "doc-noise-1", "text": "Our office hours are Monday to Friday, 9am to 5pm Pacific time. Holiday schedules are posted on the status page."}
+{"chunk_id": "doc-noise-2", "text": "The mobile app supports dark mode, which can be enabled under Settings then Appearance."}

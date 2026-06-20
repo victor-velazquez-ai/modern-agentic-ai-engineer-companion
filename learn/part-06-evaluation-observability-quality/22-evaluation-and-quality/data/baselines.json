@@ -1,0 +1,12 @@
+{
+  "overall": 1.0,
+  "slices": {
+    "billing": 1.0,
+    "tool-use": 1.0,
+    "safety": 1.0,
+    "adversarial": 1.0,
+    "scope": 1.0,
+    "tone": 1.0,
+    "howto": 1.0
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "note": "A handful of mock multi-run sessions. Each session is a conversation; each run is one user turn (one trace). Runs carry session.id so they stitch back into the conversation the user actually had. Used for session-level metrics in 23-02.",
+  "sessions": [
+    {
+      "session_id": "sess_A1",
+      "resolved": true,
+      "abandoned": false,
+      "runs": [
+        {"run_id": "r1", "tokens": 1900, "cost_usd": 0.0062, "outcome": "ok"},
+        {"run_id": "r2", "tokens": 2100, "cost_usd": 0.0071, "outcome": "ok"}
+      ]
+    },
+    {
+      "session_id": "sess_B7",
+      "resolved": true,
+      "abandoned": false,
+      "runs": [
+        {"run_id": "r1", "tokens": 1700, "cost_usd": 0.0055, "outcome": "ok"},
+        {"run_id": "r2", "tokens": 1950, "cost_usd": 0.0064, "outcome": "ok"},
+        {"run_id": "r3", "tokens": 2200, "cost_usd": 0.0078, "outcome": "ok"},
+        {"run_id": "r4", "tokens": 2050, "cost_usd": 0.0069, "outcome": "ok"}
+      ]
+    },
+    {
+      "session_id": "sess_C3",
+      "resolved": false,
+      "abandoned": true,
+      "runs": [
+        {"run_id": "r1", "tokens": 1800, "cost_usd": 0.0059, "outcome": "ok"},
+        {"run_id": "r2", "tokens": 1850, "cost_usd": 0.0061, "outcome": "error"}
+      ]
+    },
+    {
+      "session_id": "sess_D9",
+      "resolved": true,
+      "abandoned": false,
+      "runs": [
+        {"run_id": "r1", "tokens": 2600, "cost_usd": 0.0091, "outcome": "ok"}
+      ]
+    },
+    {
+      "session_id": "sess_E5",
+      "resolved": false,
+      "abandoned": true,
+      "runs": [
+        {"run_id": "r1", "tokens": 1750, "cost_usd": 0.0057, "outcome": "ok"},
+        {"run_id": "r2", "tokens": 1900, "cost_usd": 0.0063, "outcome": "ok"},
+        {"run_id": "r3", "tokens": 2000, "cost_usd": 0.0066, "outcome": "ok"},
+        {"run_id": "r4", "tokens": 2100, "cost_usd": 0.0070, "outcome": "ok"},
+        {"run_id": "r5", "tokens": 2250, "cost_usd": 0.0079, "outcome": "ok"}
+      ]
+    },
+    {
+      "session_id": "sess_F2",
+      "resolved": true,
+      "abandoned": false,
+      "runs": [
+        {"run_id": "r1", "tokens": 2000, "cost_usd": 0.0067, "outcome": "ok"},
+        {"run_id": "r2", "tokens": 2150, "cost_usd": 0.0073, "outcome": "ok"},
+        {"run_id": "r3", "tokens": 2300, "cost_usd": 0.0081, "outcome": "ok"}
+      ]
+    }
+  ]
+}
