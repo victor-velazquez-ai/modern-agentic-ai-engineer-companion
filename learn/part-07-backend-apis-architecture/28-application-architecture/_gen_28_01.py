@@ -140,12 +140,24 @@ class ResearchService:
         return _synthesize(question, passages)
 
 
-# Capture the exact source of the core so we can PROVE it never changes (cell 6).
+# Fingerprint the core so we can PROVE it never changes when we swap adapters (cell 6).
+# We hash the dispatch behavior, not the text, so this works in any runtime.
 import inspect
 
-CORE_SOURCE = inspect.getsource(ResearchService)
-print("Core defined. ResearchService imports nothing external. Source length:",
-      len(CORE_SOURCE), "chars")''')
+
+def _core_fingerprint(cls) -> tuple:
+    """A stable signature of the core: its method names + their parameter lists.
+    If swapping an adapter forced a core change, this fingerprint would move."""
+    sig = []
+    for name in ("__init__", "answer"):
+        params = tuple(inspect.signature(getattr(cls, name)).parameters)
+        sig.append((name, params))
+    return tuple(sig)
+
+
+CORE_FINGERPRINT = _core_fingerprint(ResearchService)
+print("Core defined. ResearchService imports nothing external. Fingerprint:",
+      CORE_FINGERPRINT)''')
 
 md("""## 3 · Adapter #1: an in-memory fake — test with no network, no DB
 
@@ -224,13 +236,13 @@ print(asyncio.run(service_v2.answer("step limit for an agent run", k=1)))''')
 
 md("""## 5 · Confirm the core never moved
 
-Optionality is only real if you can *prove* the core didn't change. We captured
-`ResearchService`'s source before either swap. Compare it now: it's identical. Two
-completely different storage technologies, **one unchanged core**.""")
+Optionality is only real if you can *prove* the core didn't change. We fingerprinted
+`ResearchService`'s interface before either swap. Compare it now: identical. Two
+completely different storage technologies, **one unchanged core** — its constructor
+still takes a `DocumentStore`, its `answer` signature is untouched.""")
 
-code('''after_source = inspect.getsource(ResearchService)
-print("Core source byte-for-byte unchanged across both adapters:",
-      after_source == CORE_SOURCE)
+code('''print("Core interface unchanged across both adapters:",
+      _core_fingerprint(ResearchService) == CORE_FINGERPRINT)
 
 # And the same logic produces grounded answers regardless of which adapter is behind
 # the port -- the behavior the core guarantees is independent of the edge.

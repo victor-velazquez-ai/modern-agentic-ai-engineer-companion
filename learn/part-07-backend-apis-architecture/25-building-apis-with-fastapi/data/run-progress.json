@@ -1,0 +1,11 @@
+{
+  "_comment": "Deterministic progress-event sequence for the capstone backend notebook 25-03 (MOCK mode). The mock worker emits these in order while a run executes; GET /runs/{id}/stream replays them as SSE frames, and the final 'done' carries the answer.",
+  "progress": [
+    {"type": "status", "phase": "queued", "message": "run accepted, waiting for a worker"},
+    {"type": "status", "phase": "started", "message": "worker picked up the run"},
+    {"type": "step", "n": 1, "of": 3, "message": "planning the approach"},
+    {"type": "step", "n": 2, "of": 3, "message": "retrieving sources"},
+    {"type": "step", "n": 3, "of": 3, "message": "drafting the answer"},
+    {"type": "done", "message": "complete", "answer": "Yes — full refunds are available within 30 days of purchase."}
+  ]
+}

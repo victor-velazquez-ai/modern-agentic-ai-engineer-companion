@@ -1,0 +1,7 @@
+{
+  "_comment": "Canned LLM completion for the MOCK=1 LLM-response-cache demo in 30-03. No API key needed; this is what the live call (MOCK=0) would populate the cache with. Token counts are illustrative.",
+  "model": "claude-sonnet-4-6",
+  "prompt": "Summarize this support ticket in one sentence: 'My order ORD-9912 never arrived and the tracking page is blank.'",
+  "completion": "The customer reports that order ORD-9912 was never delivered and its tracking page shows no information.",
+  "usage": { "input_tokens": 34, "output_tokens": 19 }
+}

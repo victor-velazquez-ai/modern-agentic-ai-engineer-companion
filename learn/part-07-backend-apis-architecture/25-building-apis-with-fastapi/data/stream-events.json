@@ -1,0 +1,13 @@
+{
+  "_comment": "Deterministic scripted agent stream for notebook 25-02 (MOCK mode). Structured progress events first, then answer tokens, then done. Mirrors the book's SSE frame shape: each item is sent as one `data: <json>\\n\\n` frame.",
+  "events": [
+    {"type": "status", "step": 1, "of": 3, "message": "planning"},
+    {"type": "tool", "name": "search_docs", "message": "calling tool search_docs"},
+    {"type": "retrieval", "count": 5, "message": "retrieved 5 sources"},
+    {"type": "status", "step": 2, "of": 3, "message": "reading sources"},
+    {"type": "status", "step": 3, "of": 3, "message": "drafting answer"}
+  ],
+  "tokens": [
+    "Your ", "refund ", "window ", "is ", "30 ", "days ", "from ", "purchase."
+  ]
+}
