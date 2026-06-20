@@ -1,0 +1,22 @@
+{
+  "_note": "ILLUSTRATIVE, CLEARLY-FAKE unit prices for the offline cost toy in Ch 32. These are NOT live cloud prices and must never be used for real estimates. Round numbers chosen to make the architecture trade-offs (on-demand vs spot vs reserved, scale-to-zero, multi-AZ, egress) legible. USD.",
+  "currency": "USD",
+  "hours_per_month": 730,
+  "compute": {
+    "_note": "Per-hour price for one instance, by purchase model. spot is cheap+interruptible; reserved is a commitment discount on steady baseline.",
+    "app_instance": {"on_demand": 0.10, "spot": 0.03, "reserved": 0.06},
+    "worker_instance": {"on_demand": 0.12, "spot": 0.035, "reserved": 0.072},
+    "gpu_instance": {"on_demand": 3.00, "spot": 0.90, "reserved": 1.80}
+  },
+  "storage": {
+    "_note": "Monthly price.",
+    "object_per_gb_month": 0.02,
+    "managed_db_per_hour": 0.08,
+    "block_per_gb_month": 0.10
+  },
+  "network": {
+    "_note": "Load balancer is billed per-hour; egress is the quiet budget-killer billed per GB out.",
+    "load_balancer_per_hour": 0.025,
+    "egress_per_gb": 0.09
+  }
+}

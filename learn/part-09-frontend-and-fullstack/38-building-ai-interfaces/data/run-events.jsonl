@@ -1,0 +1,10 @@
+{"kind": "token", "text": "Checking "}
+{"kind": "token", "text": "the docs "}
+{"kind": "token", "text": "now.\n"}
+{"kind": "tool_call", "id": "tc_1", "name": "searchDocs", "args": {"query": "vector index rebuild"}}
+{"kind": "tool_result", "id": "tc_1", "name": "searchDocs", "citations": [{"id": "c1", "title": "Rebuilding a Vector Index", "url": "https://docs.example.com/vector-index-rebuild"}, {"id": "c2", "title": "Zero-downtime Reindex", "url": "https://docs.example.com/zero-downtime-reindex"}]}
+{"kind": "token", "text": "Rebuild the index "}
+{"kind": "token", "text": "behind a shadow alias, "}
+{"kind": "token", "text": "then swap "}
+{"kind": "token", "text": "atomically [1][2]."}
+{"kind": "done", "finish_reason": "stop"}

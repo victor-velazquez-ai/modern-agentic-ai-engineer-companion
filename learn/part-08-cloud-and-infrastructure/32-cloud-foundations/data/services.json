@@ -1,0 +1,23 @@
+{
+  "_note": "Illustrative service -> primitive lookup for Ch 32. Maps real AWS/Azure/GCP service names onto the four primitives from the book (compute / storage / network / identity). 'combo' marks higher-level managed services built by combining primitives, with a 'parts' hint. Not exhaustive, not pricing.",
+  "services": [
+    {"name": "AWS EC2", "cloud": "aws", "primitive": "compute", "note": "Rented virtual machines."},
+    {"name": "AWS Lambda", "cloud": "aws", "primitive": "compute", "note": "Functions; scale-to-zero serverless."},
+    {"name": "AWS Fargate", "cloud": "aws", "primitive": "compute", "note": "Serverless containers (ECS/EKS)."},
+    {"name": "AWS S3", "cloud": "aws", "primitive": "storage", "note": "Object storage."},
+    {"name": "AWS EBS", "cloud": "aws", "primitive": "storage", "note": "Block storage attached to an instance."},
+    {"name": "AWS RDS", "cloud": "aws", "primitive": "storage", "note": "Managed relational database."},
+    {"name": "AWS DynamoDB", "cloud": "aws", "primitive": "storage", "note": "Managed key-value / document database."},
+    {"name": "AWS VPC", "cloud": "aws", "primitive": "network", "note": "Private virtual network / isolation."},
+    {"name": "AWS ALB", "cloud": "aws", "primitive": "network", "note": "Application load balancer."},
+    {"name": "AWS Route 53", "cloud": "aws", "primitive": "network", "note": "DNS."},
+    {"name": "AWS IAM", "cloud": "aws", "primitive": "identity", "note": "Who can do what to which resource."},
+    {"name": "Azure Virtual Machines", "cloud": "azure", "primitive": "compute", "note": "Rented VMs."},
+    {"name": "Azure Blob Storage", "cloud": "azure", "primitive": "storage", "note": "Object storage (S3 analogue)."},
+    {"name": "Azure Entra ID", "cloud": "azure", "primitive": "identity", "note": "Identity & access (IAM analogue)."},
+    {"name": "GCP Compute Engine", "cloud": "gcp", "primitive": "compute", "note": "Rented VMs."},
+    {"name": "GCP Cloud Storage", "cloud": "gcp", "primitive": "storage", "note": "Object storage (S3 analogue)."},
+    {"name": "GCP Cloud Load Balancing", "cloud": "gcp", "primitive": "network", "note": "Load balancer."},
+    {"name": "AWS SageMaker", "cloud": "aws", "primitive": "combo", "parts": ["compute", "storage", "identity"], "note": "Managed ML platform built from primitives."}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "suite": "agent-support-bot",
+  "metric": "answer_accuracy",
+  "threshold": 0.80,
+  "baseline": {
+    "label": "main@a1b2c3d",
+    "n": 50,
+    "score": 0.86,
+    "per_case_pass_rate": 0.86
+  },
+  "candidates": {
+    "good-change": {
+      "label": "pr-241: tighten retrieval top_k",
+      "n": 50,
+      "score": 0.88,
+      "per_case_pass_rate": 0.88,
+      "note": "small improvement; should pass the gate"
+    },
+    "regression": {
+      "label": "pr-242: 'concise' system-prompt rewrite",
+      "n": 50,
+      "score": 0.74,
+      "per_case_pass_rate": 0.74,
+      "note": "prompt edit that drops accuracy below threshold; should BLOCK the merge"
+    }
+  }
+}

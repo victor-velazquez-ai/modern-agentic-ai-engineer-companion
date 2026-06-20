@@ -1,0 +1,18 @@
+{
+  "id": "msg_mock_bedrock_01",
+  "type": "message",
+  "role": "assistant",
+  "model": "anthropic.claude-opus-4-8",
+  "content": [
+    {
+      "type": "text",
+      "text": "Bedrock is AWS's managed gateway to foundation models. You call one API (bedrock-runtime), your request and the model's response stay inside your AWS account and security perimeter, and you pay per token with no infrastructure to run. Use it for model access; keep your orchestration in your own code."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 41,
+    "output_tokens": 71
+  }
+}

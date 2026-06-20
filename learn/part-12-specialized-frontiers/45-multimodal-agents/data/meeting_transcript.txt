@@ -1,0 +1,3 @@
+[00:00:04] (Priya) Let's ship the extraction gate behind a feature flag this sprint.
+[00:00:11] (Marco) Agreed — and route anything under 0.8 confidence to the review queue.
+[00:00:19] (Priya) Action item: Marco builds the labeled eval set before we touch the prompt.

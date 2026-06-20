@@ -1,0 +1,139 @@
+{
+  "request": "summarize last week's customer feedback and file the top three issues",
+  "tenant": "acme",
+  "run_id": "run_8f21c0",
+  "spans": [
+    {
+      "seq": 1,
+      "hop": "frontend.submit",
+      "plane": "infrastructure",
+      "layer": "Frontend",
+      "capstone_dir": "web/",
+      "chapters": "Ch 37-38",
+      "ms": 14.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Next.js chat posts the prompt and opens an SSE connection for the stream."
+    },
+    {
+      "seq": 2,
+      "hop": "api.intake",
+      "plane": "infrastructure",
+      "layer": "Backend",
+      "capstone_dir": "app/",
+      "chapters": "Ch 24-26, 42",
+      "ms": 22.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Thin FastAPI intake: auth resolves tenant, rate limit checks quota, persists a run row, enqueues the job, returns a stream handle. No model call."
+    },
+    {
+      "seq": 3,
+      "hop": "queue.enqueue",
+      "plane": "infrastructure",
+      "layer": "Async",
+      "capstone_dir": "workers/",
+      "chapters": "Ch 29, 31",
+      "ms": 5.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Run lands on the broker (SQS/Redis); a Celery worker will pick it up."
+    },
+    {
+      "seq": 4,
+      "hop": "worker.pickup",
+      "plane": "infrastructure",
+      "layer": "Async",
+      "capstone_dir": "workers/",
+      "chapters": "Ch 31",
+      "ms": 8.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Celery worker dequeues the run and starts the agent; the API tier stays stateless."
+    },
+    {
+      "seq": 5,
+      "hop": "agent.plan",
+      "plane": "model",
+      "layer": "Agent core",
+      "capstone_dir": "agents/",
+      "chapters": "Ch 16-17",
+      "ms": 690.0,
+      "tokens": 1180,
+      "cost_usd": 0.00280,
+      "detail": "Agent plans the task: summarize feedback, then file the top three issues. Step checkpointed."
+    },
+    {
+      "seq": 6,
+      "hop": "rag.retrieve",
+      "plane": "data",
+      "layer": "Knowledge",
+      "capstone_dir": "rag/",
+      "chapters": "Ch 13",
+      "ms": 36.0,
+      "tokens": 0,
+      "cost_usd": 0.00003,
+      "detail": "pgvector hybrid retrieval over last week's feedback; chunks reranked. One chunk later flagged as a wrong retrieval."
+    },
+    {
+      "seq": 7,
+      "hop": "agent.summarize",
+      "plane": "model",
+      "layer": "Agent core",
+      "capstone_dir": "agents/",
+      "chapters": "Ch 12, 14",
+      "ms": 910.0,
+      "tokens": 1640,
+      "cost_usd": 0.00410,
+      "detail": "Model summarizes the retrieved feedback into the top three issues. Step checkpointed."
+    },
+    {
+      "seq": 8,
+      "hop": "mcp.tool.create_ticket [APPROVAL]",
+      "plane": "orchestration",
+      "layer": "Orchestration",
+      "capstone_dir": "mcp/",
+      "chapters": "Ch 18-20",
+      "ms": 120.0,
+      "tokens": 0,
+      "cost_usd": 0.00002,
+      "detail": "Ticketing tool called through MCP, GATED by a human approval because filing issues is an irreversible side effect."
+    },
+    {
+      "seq": 9,
+      "hop": "gateway.route",
+      "plane": "infrastructure",
+      "layer": "LLMOps",
+      "capstone_dir": "infra/gateway/",
+      "chapters": "Ch 39",
+      "ms": 9.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Every model call was routed, budget-checked, and breaker-protected through the gateway."
+    },
+    {
+      "seq": 10,
+      "hop": "sse.stream",
+      "plane": "infrastructure",
+      "layer": "Frontend",
+      "capstone_dir": "web/",
+      "chapters": "Ch 38",
+      "ms": 16.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Tokens stream back over SSE; the UI renders steps, citations, and the approval card."
+    },
+    {
+      "seq": 11,
+      "hop": "observability.export",
+      "plane": "infrastructure",
+      "layer": "Quality",
+      "capstone_dir": "evals/ + infra/observability/",
+      "chapters": "Ch 22-23",
+      "ms": 7.0,
+      "tokens": 0,
+      "cost_usd": 0.0,
+      "detail": "Full trace (spans, tokens, cost per tenant) lands in observability; the wrong retrieval is queued to be promoted into the eval set tomorrow."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "artifact": "capstone-export",
+  "version": 3,
+  "rows": [
+    {"session_id": "sess-001", "tokens_in": 412, "tokens_out": 88},
+    {"session_id": "sess-002", "tokens_in": 1190, "tokens_out": 240}
+  ],
+  "note": "Tiny fixture for the S3 round-trip in 33-02. Small on purpose."
+}

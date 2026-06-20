@@ -1,0 +1,10 @@
+{
+  "_about": "Ground-truth fields for the labeled eval set (Part VI discipline applied to pixels). Field-level accuracy is scored against these. invoice_date may be null where the source is genuinely illegible (DOC-005).",
+  "labels": {
+    "DOC-001-clean": {"vendor": "Northwind Supplies", "invoice_date": "2026-03-14", "total": 150.0},
+    "DOC-002-blurred-digit": {"vendor": "Acme Corp", "invoice_date": "2026-04-02", "total": 100.0},
+    "DOC-003-injection": {"vendor": "Globex", "invoice_date": "2026-05-21", "total": 200.0},
+    "DOC-004-multiline": {"vendor": "Initech", "invoice_date": "2026-02-09", "total": 500.0},
+    "DOC-005-low-confidence": {"vendor": "Umbrella LLC", "invoice_date": null, "total": 200.0}
+  }
+}

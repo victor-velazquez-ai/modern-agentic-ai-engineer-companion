@@ -1,0 +1,43 @@
+{
+  "note": "Concept -> service name across the three clouds. Mirrors the parity table in book chapter 34 (S34.1/S34.2). Tiny on purpose: the four primitives plus the AI model-access row.",
+  "primitives": [
+    {
+      "concept": "Containers",
+      "aws": "ECS / Fargate",
+      "azure": "Container Apps / AKS",
+      "gcp": "Cloud Run / GKE"
+    },
+    {
+      "concept": "Functions",
+      "aws": "Lambda",
+      "azure": "Azure Functions",
+      "gcp": "Cloud Functions"
+    },
+    {
+      "concept": "Object storage",
+      "aws": "S3",
+      "azure": "Blob Storage",
+      "gcp": "Cloud Storage"
+    },
+    {
+      "concept": "Managed SQL",
+      "aws": "RDS / Aurora",
+      "azure": "Azure SQL / Postgres",
+      "gcp": "Cloud SQL"
+    },
+    {
+      "concept": "Identity",
+      "aws": "IAM",
+      "azure": "Entra ID + RBAC",
+      "gcp": "IAM"
+    }
+  ],
+  "model_access": [
+    {
+      "concept": "Managed model access",
+      "aws": "Bedrock (Claude, Llama, Titan)",
+      "azure": "Azure OpenAI Service (GPT family)",
+      "gcp": "Vertex AI (Gemini)"
+    }
+  ]
+}
