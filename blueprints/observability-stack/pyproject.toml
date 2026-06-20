@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "observability-stack"
+version = "0.1.0"
+description = "OpenTelemetry-style tracing and cost/token accounting for agent runs — a pattern blueprint for Modern Agentic AI Engineer (Ch 23)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Victor Velazquez" }]
+keywords = ["observability", "opentelemetry", "tracing", "agents", "llm", "cost"]
+
+# Core is stdlib-only: the console exporter, the span tree, and the cost roll-up need
+# nothing installed, so the package imports and the demo/tests run free in MOCK mode.
+dependencies = []
+
+[project.optional-dependencies]
+# Only needed to ship traces to a live backend. The OTel-backed exporters import these
+# lazily, so they are never required for the default console/offline path.
+otel = [
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
+]
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

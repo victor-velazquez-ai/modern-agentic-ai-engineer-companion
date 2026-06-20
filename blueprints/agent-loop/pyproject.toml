@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-loop"
+version = "0.1.0"
+description = "A framework-free, tool-using agent loop (observe -> decide -> act -> observe) with a turn cap, tool-error recovery, malformed-call repair, parallel dispatch, and cancellation. The hardened version of the Ch 12 toy loop."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Modern Agentic AI Engineer (companion repo)" }]
+keywords = ["llm", "agent", "agent-loop", "tool-use", "function-calling", "react", "agents"]
+
+# Standalone in MOCK mode this needs nothing beyond the stdlib (the loop ships its own mock
+# model). The optional extras below are only exercised on the live (MOCK=0) path / in CI.
+dependencies = []
+
+[project.optional-dependencies]
+# The live model port routes through the `llm-gateway` blueprint (Anthropic-first).
+live = ["anthropic"]
+# Test + lint tooling (already pinned in the repo-root requirements.txt).
+dev = ["pytest", "ruff", "black"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

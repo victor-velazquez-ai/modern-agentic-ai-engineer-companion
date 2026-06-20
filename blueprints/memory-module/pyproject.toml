@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-module"
+version = "0.1.0"
+description = "Layered agent memory (working + long-term) behind a persistence adapter — a pattern blueprint for Modern Agentic AI Engineer (Ch 14)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Modern Agentic AI Engineer — companion repo" }]
+keywords = ["agents", "memory", "llm", "summarization", "persistence"]
+
+# Standalone by design: the core module imports only the Python standard library. The summarizer
+# and relevance scorer are mockable/offline so MOCK mode needs no third-party packages. Heavier
+# swaps (tiktoken for token counting, sentence-transformers / a vector DB for relevance, psycopg
+# for a Postgres backend) are pinned at the repo root in ../../requirements.txt.
+dependencies = []
+
+[project.optional-dependencies]
+# Only needed to run the test suite.
+test = ["pytest>=7"]
+
+[project.urls]
+"Blueprint catalog" = "../README.md"
+"Composes — llm-gateway" = "../llm-gateway/PLAN.md"
+"Pairs with — agent-loop" = "../agent-loop/PLAN.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

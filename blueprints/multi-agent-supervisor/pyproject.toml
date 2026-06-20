@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent-supervisor"
+version = "0.1.0"
+description = "A production-grade supervisor that plans, delegates to specialist workers, runs them in parallel, isolates failures, and aggregates results. Companion blueprint for 'Modern Agentic AI Engineer' (Ch 17)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Modern Agentic AI Engineer" }]
+keywords = ["agents", "multi-agent", "supervisor", "orchestration", "llm"]
+
+# Runs entirely on the standard library in MOCK mode (the default). The only
+# third-party dependency is the Anthropic SDK, needed solely on the live path
+# (COMPANION_MOCK=0) and imported lazily. It is pinned through the repo-level
+# requirements.txt at each book-edition tag.
+dependencies = []
+
+[project.optional-dependencies]
+live = ["anthropic"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-gateway"
+version = "0.1.0"
+description = "The single door to every model call: base client + routing, fallbacks, cache, metering, guards (book Ch 11, 39-41)."
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime is stdlib-only. The mock provider (default) needs nothing; the
+# Anthropic adapter needs `anthropic`, imported lazily so install never requires it.
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40"]
+test = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

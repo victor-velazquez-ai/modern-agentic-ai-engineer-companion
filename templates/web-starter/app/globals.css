@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Minimal, clean base styles. Tailwind utilities do the rest in the components.
+ * TODO: add your design tokens / brand styles here, or extend tailwind.config.ts.
+ */
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}

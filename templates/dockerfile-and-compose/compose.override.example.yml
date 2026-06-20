@@ -1,0 +1,36 @@
+# Local-dev override — bind-mounts your source and turns on hot reload, WITHOUT
+# touching the base docker-compose.yml.
+#
+# Compose auto-merges a file literally named `compose.override.yml`, so:
+#
+#   cp compose.override.example.yml compose.override.yml
+#   docker compose up        # base + override are merged automatically
+#
+# In dev your edited code is mounted live into the container, so the api reloads
+# on save and the worker can be restarted to pick up changes — no rebuild per edit.
+# (`compose.override.yml` is git-ignored; this *.example* file is the committed one.)
+
+services:
+  api:
+    # Bind-mount the source over the image copy so edits are seen immediately.
+    # ▢ TODO: match the path your code lives in (here: ./app, as in the Dockerfile).
+    volumes:
+      - ./app:/app/app
+    # --reload restarts uvicorn when a watched file changes.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      # Dev convenience: chatty logs, never mock-by-accident surprises documented.
+      APP_ENV: local
+      LOG_LEVEL: DEBUG
+
+  worker:
+    volumes:
+      - ./app:/app/app
+    # ▢ TODO: keep in sync with the worker command in docker-compose.yml.
+    #   watchdog auto-restarts the worker on code change (dev-only dependency).
+    command: ["watchmedo", "auto-restart", "--directory=/app/app", "--pattern=*.py",
+              "--recursive", "--", "celery", "-A", "app.worker:celery_app",
+              "worker", "--loglevel=INFO"]
+    environment:
+      APP_ENV: local
+      LOG_LEVEL: DEBUG

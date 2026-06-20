@@ -1,0 +1,36 @@
+# Metadata for the `support_reply` prompt.
+#
+# This file is the single source of truth for:
+#   - which version is `latest` (the pointer production pins to)
+#   - the model + sampling params this prompt was tuned for
+#   - who owns it and what it does
+#
+# Versioning rule: `vN/` directories are IMMUTABLE once shipped. To change a
+# shipped prompt, add a new `vN+1/` directory and move the `latest` pointer
+# here. Rollback is changing this one line back.
+
+name: support_reply
+owner: TODO-your-team@example.com   # TODO: who owns/reviews this prompt
+description: >-
+  Drafts a customer-support reply in the company's voice, given the customer's
+  message and a desired tone. v2 adds an explicit empathy + next-step structure.
+
+# The version `load(name)` / `load(name, "latest")` resolves to. Move this
+# pointer to ship a new version; change it back to roll back.
+latest: v2
+
+# The model this prompt targets. Default: the latest, most capable Claude model.
+# (Use a `claude-sonnet-*` / `claude-haiku-*` id instead for cheaper, high-volume
+# tiers — see registry usage notes in README.md.)
+model: claude-opus-4-8
+
+# Sampling / generation parameters for this prompt.
+#
+# NOTE for Claude Opus 4.8 / 4.7 (and Fable 5): `temperature`, `top_p`, and
+# `top_k` are NOT accepted — sending them returns a 400. Steer behavior through
+# the prompt text and the `effort` level instead. Thinking is adaptive-only.
+params:
+  max_tokens: 1024
+  thinking:
+    type: adaptive          # adaptive thinking (the only on-mode on Opus 4.8)
+  effort: medium            # low | medium | high | xhigh | max

@@ -1,0 +1,109 @@
+# ci.yml — lint → type → test, in that order (fast checks first).
+#
+# Copy this file (and eval-gate.yml) into your repo's `.github/workflows/`.
+# It assumes the `agent-project-starter` layout: a uv-managed project with
+# `src/` + ruff + mypy + pytest, and a `make` target for each gate. If you do
+# not use a Makefile, the inline `uv run …` fallbacks below do the same thing —
+# keep one, delete the other.
+#
+# No secrets are referenced here: lint/type/test never call a live API. The
+# eval quality gate lives in eval-gate.yml and runs in MOCK mode (also free).
+
+name: CI
+
+# Run on every push and on every pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: this workflow only needs to read the repo.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Belt-and-suspenders: make any accidental SDK call use mock mode in CI.
+  COMPANION_MOCK: "1"
+
+jobs:
+  lint:
+    name: lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with dependency cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          # Cache is keyed on the lockfile so it busts when deps change.
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        # TODO: point this at your pinned interpreter (e.g. .python-version).
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Lint
+        # Prefer the Makefile target; falls back to a direct ruff invocation.
+        run: make lint || uv run ruff check .
+
+  type:
+    name: type (mypy)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with dependency cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Type-check
+        run: make type || uv run mypy src
+
+  test:
+    name: test (pytest)
+    runs-on: ubuntu-latest
+    needs: type
+    # ▢ TODO (matrix): uncomment to fan out across interpreters. The job already
+    # reads ${{ matrix.python-version }} below, so this is the only change needed.
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with dependency cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        # When the matrix above is enabled this pins each leg; without it,
+        # uv resolves the project's default interpreter.
+        run: uv python install ${{ matrix.python-version || '' }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Test
+        # Tests run in MOCK mode (env above) so CI never spends on API calls.
+        run: make test || uv run pytest -q

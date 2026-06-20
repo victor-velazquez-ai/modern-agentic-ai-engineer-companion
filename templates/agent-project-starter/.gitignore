@@ -1,0 +1,30 @@
+# --- Secrets / env ---
+.env
+.env.local
+*.key
+secrets.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- Build / packaging ---
+build/
+dist/
+
+# --- uv ---
+# The lockfile (uv.lock) SHOULD be committed for apps; uncomment if this is a library.
+# uv.lock
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

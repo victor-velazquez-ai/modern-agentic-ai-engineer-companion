@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eval-harness"
+version = "0.1.0"
+description = "A quality gate for agents: golden datasets, pluggable graders, an LLM-judge, a scoring runner, and a CI gate that fails the build on regression."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Modern Agentic AI Engineer (companion repo)" }]
+keywords = ["llm", "evaluation", "agents", "ci", "quality-gate", "llm-judge"]
+
+# Standalone in MOCK mode this needs nothing beyond the stdlib. The optional
+# extras below are only exercised on the live (MOCK=0) path / in CI.
+dependencies = []
+
+[project.optional-dependencies]
+# Live LLM-judge path routes through the `llm-gateway` blueprint (Anthropic-first).
+live = ["anthropic"]
+# Test + lint tooling (already pinned in the repo-root requirements.txt).
+dev = ["pytest", "ruff", "black"]
+
+[project.scripts]
+eval-harness-gate = "eval_harness.gate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,81 @@
+# uv-managed project. Packaging + ruff + mypy + pytest all configured here —
+# one file, no setup.py. Fill in the ▢ TODO fields, then `make install`.
+#
+# Quickstart:
+#   uv sync            # create .venv and install (incl. dev extras)
+#   make check         # fmt-check + lint + type + test
+#   make run           # run the agent loop in MOCK mode (no API spend)
+
+[project]
+# ▢ TODO: rename to your project. Keep it importable-friendly (kebab-case is fine
+#         for the distribution name; the import package below stays `app`).
+name = "agent-project-starter"
+version = "0.1.0"
+# ▢ TODO: one-line description of what your agent does.
+description = "TODO: a short description of your agent project"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+# ▢ TODO: your details.
+authors = [{ name = "TODO Your Name", email = "todo@example.com" }]
+
+dependencies = [
+    # One LLM client door (Anthropic-first; see src/app/llm.py).
+    "anthropic>=0.40",
+    # Typed settings loaded from the environment / .env.
+    "pydantic-settings>=2.0",
+    "pydantic>=2.0",
+    # Loads .env into the environment for local dev.
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Dev toolchain. Installed by `uv sync` / `make install`.
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pytest>=8.0",
+]
+
+[project.scripts]
+# `agent` becomes a CLI entrypoint after `uv sync` (or `uv run agent`).
+# ▢ TODO: rename `agent` to your command name if you like.
+agent = "app.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# src/ layout: the import package is `app` under src/.
+packages = ["src/app"]
+
+# --- Ruff: lint + import sort + formatter -------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# A sensible, not-overbearing default set. E/F = pyflakes+pycodestyle, I = isort,
+# UP = pyupgrade, B = bugbear, SIM = simplify, RUF = ruff-specific.
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may use assert and slightly looser conventions.
+"tests/**" = ["S101"]
+
+# --- mypy: strict-ish ----------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# Don't make third-party stubs a blocker for a fresh copy.
+ignore_missing_imports = true
+files = ["src", "tests"]
+
+# --- pytest --------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# So `from app...` imports resolve against src/ without an editable install step.
+pythonpath = ["src"]

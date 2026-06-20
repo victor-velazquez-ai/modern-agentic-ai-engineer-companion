@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-pipeline"
+version = "0.1.0"
+description = "Hybrid retrieval pipeline (chunk -> embed -> retrieve -> rerank) — a pattern blueprint for Modern Agentic AI Engineer (Ch 13)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Modern Agentic AI Engineer companion" }]
+keywords = ["rag", "retrieval", "embeddings", "reranking", "hybrid-search", "agents"]
+
+# The package itself runs on the STANDARD LIBRARY ALONE in the default MOCK mode — no runtime
+# dependencies are required to ingest, embed (mock), retrieve, fuse, and rerank offline.
+# Optional integrations (real embeddings via the llm-gateway blueprint, a local Chroma store)
+# pull from the repo-wide requirements.txt and are imported lazily, so they never block import.
+dependencies = []
+
+[project.optional-dependencies]
+# Local persistent vector store (ChromaVectorStore). Listed in the repo requirements.txt.
+chroma = ["chromadb>=0.5"]
+# Test toolchain.
+test = ["pytest>=7"]
+
+[project.urls]
+"Book" = "https://www.amazon.com/dp/placeholder"  # Modern Agentic AI Engineer
+"Blueprint plan" = "./PLAN.md"
+
+# src/ layout: the importable package lives in src/rag_pipeline.
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+# Tests add src/ to sys.path themselves (see tests/conftest.py); no install needed to run them.
+testpaths = ["tests"]
+addopts = "-q"

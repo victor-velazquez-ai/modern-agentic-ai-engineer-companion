@@ -1,0 +1,100 @@
+# eval-gate.yml — the differentiator: CI blocks on *agent-quality* regressions.
+#
+# This runs your golden eval set (the `eval-dataset-template`, copied to `evals/`)
+# through `evals/run.py`. The script prints a pass/fail table and EXITS NON-ZERO
+# when the score is below threshold — that non-zero exit is what fails the PR.
+#
+# Two jobs:
+#   1) eval-gate     — runs on every PR/push in COMPANION_MOCK=1: free, deterministic,
+#                      no secrets, safe for forks. This is the gate that blocks merge.
+#   2) eval-nightly  — ▢ OPT-IN, guarded: runs MOCK=0 against live APIs on a schedule
+#                      to catch SDK/model drift. Secrets come from a protected
+#                      Environment, never from PR runs.
+
+name: Eval Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # ▢ TODO (nightly drift check): uncomment to also run on a schedule. This only
+  # triggers the guarded `eval-nightly` job below (the live, MOCK=0 path).
+  # schedule:
+  #   - cron: "0 7 * * *"  # 07:00 UTC daily
+
+# Least privilege.
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The PR gate. MOCK=1 → no API spend, deterministic, no secrets. Forks pass.
+  # ---------------------------------------------------------------------------
+  eval-gate:
+    name: eval-gate (mock)
+    runs-on: ubuntu-latest
+    env:
+      # Mock mode: the eval harness uses canned verdicts, so this is free and
+      # reproducible. NEVER add an API key to this job.
+      COMPANION_MOCK: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with dependency cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run eval set (gate)
+        # run.py exits non-zero when the score is below threshold → fails the PR.
+        # TODO: adjust the path/flags to match your eval harness CLI, e.g.
+        #   uv run python evals/run.py --dataset evals/datasets/golden.jsonl --min-score 0.9
+        run: uv run python evals/run.py
+
+  # ---------------------------------------------------------------------------
+  # ▢ OPT-IN live drift check. Disabled until you enable the `schedule:` trigger
+  # above AND create the protected `eval-live` Environment with the secret.
+  # It is gated on the schedule event so it can NEVER run on a fork PR.
+  # ---------------------------------------------------------------------------
+  eval-nightly:
+    name: eval-nightly (live, guarded)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' }}
+    # Secrets are bound to a protected Environment (add required reviewers /
+    # branch restrictions in repo Settings → Environments) — not to PR runs.
+    # TODO: create this Environment in repo settings before enabling.
+    environment: eval-live
+    env:
+      # Live mode hits real APIs to catch SDK/model drift.
+      COMPANION_MOCK: "0"
+      # Secret comes from GitHub Secrets ONLY — never a literal in this file.
+      # TODO: add ANTHROPIC_API_KEY under the `eval-live` Environment's secrets.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (with dependency cache)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run eval set (live, drift check)
+        run: uv run python evals/run.py

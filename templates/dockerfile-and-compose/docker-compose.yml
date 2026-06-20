@@ -1,0 +1,143 @@
+# The whole local stack in one file: api · worker · postgres · redis · chroma.
+#
+#   docker compose up --build      # build the shared image and start everything
+#   docker compose ps              # all five should reach "healthy"
+#   docker compose down            # stop (add -v to also drop the named volumes)
+#
+# api and worker share ONE image (built from ./Dockerfile); they differ only in
+# the command they run. Infra services use official images with healthchecks, and
+# the app services wait for them via `depends_on: { condition: service_healthy }`.
+#
+# All secrets/connection strings come from .env (see .env.example). No real secret
+# is committed here — the values below are local-only development defaults.
+
+name: agent-stack
+
+# ---------------------------------------------------------------------------
+# Reusable build definition so api and worker are guaranteed the same image.
+# ---------------------------------------------------------------------------
+x-app-build: &app-build
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+services:
+  # -------------------------------------------------------------------------
+  # api — the HTTP/streaming service (builds ./Dockerfile, default CMD).
+  # -------------------------------------------------------------------------
+  api:
+    <<: *app-build
+    image: agent-app:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Explicit so the connection points at the compose service names even if
+      # .env was copied from a different host. .env values win when set.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CHROMA_URL: ${CHROMA_URL:-http://chroma:8000}
+      COMPANION_MOCK: ${COMPANION_MOCK:-1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # -------------------------------------------------------------------------
+  # worker — same image, runs the async task processor instead of the API.
+  # -------------------------------------------------------------------------
+  worker:
+    <<: *app-build
+    image: agent-app:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CHROMA_URL: ${CHROMA_URL:-http://chroma:8000}
+      COMPANION_MOCK: ${COMPANION_MOCK:-1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # ▢ TODO: point this at your Celery app (module:instance). The worker has no
+    #   HTTP server, so it needs no port and no HTTP healthcheck.
+    command: ["celery", "-A", "app.worker:celery_app", "worker", "--loglevel=INFO"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # -------------------------------------------------------------------------
+  # postgres — relational store with pgvector for embeddings.
+  # -------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agent}
+      POSTGRES_DB: ${POSTGRES_DB:-agent}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agent} -d ${POSTGRES_DB:-agent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # -------------------------------------------------------------------------
+  # redis — Celery broker + result backend + app cache.
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # -------------------------------------------------------------------------
+  # chroma — local vector store (host port 8001 → container 8000).
+  # -------------------------------------------------------------------------
+  chroma:
+    image: chromadb/chroma:0.5.5
+    restart: unless-stopped
+    ports:
+      - "${CHROMA_PORT:-8001}:8000"
+    volumes:
+      - chroma-data:/data
+    healthcheck:
+      # The chroma image ships curl; v2 heartbeat is the documented liveness URL.
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/v2/heartbeat"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+# ---------------------------------------------------------------------------
+# Named volumes — data survives `down` and is removed with `down -v`.
+# ---------------------------------------------------------------------------
+volumes:
+  postgres-data:
+  redis-data:
+  chroma-data:
