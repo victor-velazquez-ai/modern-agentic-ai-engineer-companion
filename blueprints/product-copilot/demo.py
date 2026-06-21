@@ -35,8 +35,10 @@ from eval_harness import Case, Contains, run  # type: ignore  # noqa: E402
 from observability_stack import ConsoleExporter, Tracer  # type: ignore  # noqa: E402
 from observability_stack.cost import summarize  # type: ignore  # noqa: E402
 
+from llm_gateway import Gateway  # type: ignore  # noqa: E402
+
 import data as sample  # noqa: E402  (the committed sample dataset)
-from app import Copilot, UserDataStore  # noqa: E402
+from app import Copilot, FrontDoor, RateLimiter, UserDataStore  # noqa: E402
 from app.session_tools import Account, Order  # noqa: E402
 from tenancy import Session, TenantStores  # noqa: E402
 
@@ -65,7 +67,13 @@ def build_copilot() -> tuple[Copilot, dict[str, Session]]:
             session, [Order(**o) for o in fixture["orders"]]
         )
 
-    copilot = Copilot(stores=stores, user_data=user_data)
+    # Generous per-user budget for the linear demo run (so later phases aren't rate-limited);
+    # section 4b below demonstrates the limit explicitly with a tight budget of its own.
+    copilot = Copilot(
+        stores=stores,
+        user_data=user_data,
+        front_door=FrontDoor(rate_limiter=RateLimiter(limit=100)),
+    )
     return copilot, sessions
 
 
@@ -118,6 +126,20 @@ def main() -> None:
     print(f"  blocked={attack.blocked}  reason={attack.block_reason!r}")
     print(f"  reply : {attack.text}")
 
+    # 4b) ABUSE BOUND — a per-user rate limit protects margin + availability. ------------
+    _banner("4b. Abuse bound — per-user rate limit on a public surface")
+    tight = Copilot(
+        stores=copilot.stores,
+        user_data=copilot.user_data,
+        gateway=Gateway(),
+        front_door=FrontDoor(rate_limiter=RateLimiter(limit=3)),
+    )
+    for i in range(1, 6):
+        r = tight.answer(alice, "what plans are available?")
+        status = "blocked" if r.blocked else "ok"
+        print(f"  request #{i}: {status}"
+              + (f"  ({r.block_reason})" if r.blocked else ""))
+
     # 5) MARGIN — per-user cost metering + an exact-cache hit on a repeat question. ------
     _banner("5. Margin — per-(tenant,user) cost + cache on a repeat question")
     first = copilot.answer(bob, "what plans are available?")
@@ -146,9 +168,20 @@ def main() -> None:
     _banner("8. Evals — golden set through the eval-harness")
     cases = _load_eval_cases()
 
+    # Run the eval through a *fresh* copilot that shares the ingested tenant stores and user data
+    # but gets its own front door with generous headroom and its own gateway — so the suite
+    # measures task quality, not the per-user rate limit the earlier demo phases already spent.
+    # (The 'abuse' case still trips the content guard, which is independent of the rate budget.)
+    eval_copilot = Copilot(
+        stores=copilot.stores,
+        user_data=copilot.user_data,
+        gateway=Gateway(),
+        front_door=FrontDoor(rate_limiter=RateLimiter(limit=10_000)),
+    )
+
     def candidate(payload: dict) -> str:
         s = Session(user_id=payload["user"], tenant_id=payload["tenant"])
-        return copilot.answer(s, payload["message"]).text
+        return eval_copilot.answer(s, payload["message"]).text
 
     report = run(candidate, cases, Contains(), threshold=0.5)
     print(report.render())
