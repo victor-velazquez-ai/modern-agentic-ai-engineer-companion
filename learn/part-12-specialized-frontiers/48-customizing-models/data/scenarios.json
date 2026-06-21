@@ -1,0 +1,44 @@
+[
+  {
+    "id": "S-01",
+    "task": "Answers must cite our current internal HR policy docs, which change quarterly.",
+    "lever": "rag",
+    "rationale": "Private, large, changing knowledge that needs citations and instant updates. Facts belong in retrieval, not weights; fine-tuning would half-memorize and go stale."
+  },
+  {
+    "id": "S-02",
+    "task": "Every reply must follow our house JSON schema and clipped support-desk tone, on one narrow ticket-triage task we run a million times a day.",
+    "lever": "fine-tune",
+    "rationale": "Narrow, stable, high-volume task needing consistent format/behavior. Form-and-behavior is exactly what weights encode; volume amortizes the training cost."
+  },
+  {
+    "id": "S-03",
+    "task": "The model should refuse off-topic requests and adopt a warmer brand voice across all features.",
+    "lever": "prompt",
+    "rationale": "Behavior, tone, and policy can change in the system prompt first: fast, cheap, reversible, no infra. Always the first move."
+  },
+  {
+    "id": "S-04",
+    "task": "Summaries are missing facts from a 4,000-page product manual the model has never seen.",
+    "lever": "rag",
+    "rationale": "Knowledge the model lacks and that exceeds the context window. Retrieve the relevant passages; this is missing knowledge, not missing skill or style."
+  },
+  {
+    "id": "S-05",
+    "task": "We want a 7B model to match our frontier model on one classification task, served 50x cheaper at volume.",
+    "lever": "fine-tune",
+    "rationale": "Distill a proven, narrow capability into a smaller cheaper model. The task is stable and the volume justifies the asset; this is the economic engine of customization."
+  },
+  {
+    "id": "S-06",
+    "task": "Make the assistant ask one clarifying question before long tasks.",
+    "lever": "prompt",
+    "rationale": "A workflow/behavior tweak expressible as an instruction. Reach for prompting first; it is reversible and needs no data or infra."
+  },
+  {
+    "id": "S-07",
+    "task": "Inject our 12,000 product SKUs and live prices so the model can quote them.",
+    "lever": "rag",
+    "rationale": "The classic anti-pattern is fine-tuning to inject facts; prices change and must be attributable. Retrieve current SKUs; never bake volatile facts into weights."
+  }
+]

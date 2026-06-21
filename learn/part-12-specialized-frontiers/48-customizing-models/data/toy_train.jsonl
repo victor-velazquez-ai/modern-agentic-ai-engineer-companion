@@ -1,0 +1,12 @@
+{"id": "tr-01", "instruction": "Return the order status as JSON.", "input": "Order 4417 shipped on 2026-03-02, arriving 2026-03-05.", "output": "{\"order_id\": 4417, \"status\": \"shipped\", \"eta\": \"2026-03-05\"}"}
+{"id": "tr-02", "instruction": "Return the order status as JSON.", "input": "Order 9920 is still being packed in the warehouse.", "output": "{\"order_id\": 9920, \"status\": \"processing\", \"eta\": null}"}
+{"id": "tr-03", "instruction": "Return the order status as JSON.", "input": "We delivered order 3081 yesterday afternoon.", "output": "{\"order_id\": 3081, \"status\": \"delivered\", \"eta\": null}"}
+{"id": "tr-04", "instruction": "Return the order status as JSON.", "input": "Order 5567 was cancelled at the customer's request.", "output": "{\"order_id\": 5567, \"status\": \"cancelled\", \"eta\": null}"}
+{"id": "tr-05", "instruction": "Return the order status as JSON.", "input": "Order 7203 left the depot and should land on 2026-04-11.", "output": "{\"order_id\": 7203, \"status\": \"shipped\", \"eta\": \"2026-04-11\"}"}
+{"id": "tr-06", "instruction": "Return the order status as JSON.", "input": "Order 1188 is on hold pending a payment review.", "output": "{\"order_id\": 1188, \"status\": \"on_hold\", \"eta\": null}"}
+{"id": "tr-07", "instruction": "Return the order status as JSON.", "input": "Order 6642 is queued and not yet picked.", "output": "{\"order_id\": 6642, \"status\": \"processing\", \"eta\": null}"}
+{"id": "tr-08", "instruction": "Return the order status as JSON.", "input": "Order 4490 went out for delivery this morning, ETA 2026-05-09.", "output": "{\"order_id\": 4490, \"status\": \"shipped\", \"eta\": \"2026-05-09\"}"}
+{"id": "tr-09", "instruction": "Return the order status as JSON.", "input": "Order 2255 was returned to sender.", "output": "{\"order_id\": 2255, \"status\": \"returned\", \"eta\": null}"}
+{"id": "tr-10", "instruction": "Return the order status as JSON.", "input": "Order 8830 is packed and awaiting carrier pickup.", "output": "{\"order_id\": 8830, \"status\": \"processing\", \"eta\": null}"}
+{"id": "tr-11", "instruction": "Return the order status as JSON.", "input": "Order 3314 arrived at the customer on 2026-02-18.", "output": "{\"order_id\": 3314, \"status\": \"delivered\", \"eta\": null}"}
+{"id": "tr-12", "instruction": "Return the order status as JSON.", "input": "Order 9001 was cancelled because the item is out of stock.", "output": "{\"order_id\": 9001, \"status\": \"cancelled\", \"eta\": null}"}

@@ -1,0 +1,34 @@
+{
+  "run_id": "lora-orderstatus-r8-2026-06-20",
+  "base_model": "Qwen/Qwen2.5-0.5B",
+  "method": "LoRA (PEFT)",
+  "config": {
+    "r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.05,
+    "target_modules": ["q_proj", "v_proj"],
+    "task_type": "CAUSAL_LM",
+    "learning_rate": 0.0002,
+    "epochs": 3,
+    "batch_size": 4,
+    "seed": 7
+  },
+  "dataset": {
+    "train_examples": 12,
+    "holdout_examples": 4,
+    "note": "Toy format-shaping set; real fine-tunes use a few thousand curated, deduplicated examples."
+  },
+  "steps": [
+    {"step": 1, "epoch": 0.33, "loss": 2.41},
+    {"step": 2, "epoch": 0.67, "loss": 1.98},
+    {"step": 3, "epoch": 1.0, "loss": 1.52},
+    {"step": 4, "epoch": 1.33, "loss": 1.17},
+    {"step": 5, "epoch": 1.67, "loss": 0.94},
+    {"step": 6, "epoch": 2.0, "loss": 0.71},
+    {"step": 7, "epoch": 2.33, "loss": 0.58},
+    {"step": 8, "epoch": 2.67, "loss": 0.49},
+    {"step": 9, "epoch": 3.0, "loss": 0.44}
+  ],
+  "wall_clock_seconds": 38.2,
+  "device": "1x consumer GPU (canned log; not produced in CI)"
+}

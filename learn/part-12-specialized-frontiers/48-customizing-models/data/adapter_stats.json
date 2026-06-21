@@ -1,0 +1,9 @@
+{
+  "base_model": "Qwen/Qwen2.5-0.5B",
+  "base_total_params": 494032768,
+  "trainable_params": 540672,
+  "trainable_percent": 0.1094,
+  "adapter_file_bytes": 2230272,
+  "base_weights_bytes": 988065536,
+  "note": "print_trainable_parameters() output, captured. <1% of params are trained and the adapter is a tiny swappable file beside a frozen base."
+}

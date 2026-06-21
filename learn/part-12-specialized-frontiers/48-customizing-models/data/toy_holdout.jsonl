@@ -1,0 +1,4 @@
+{"id": "ho-01", "instruction": "Return the order status as JSON.", "input": "Order 7788 shipped last night, arriving 2026-06-22.", "output": "{\"order_id\": 7788, \"status\": \"shipped\", \"eta\": \"2026-06-22\"}", "tests": "format"}
+{"id": "ho-02", "instruction": "Return the order status as JSON.", "input": "Order 1240 is sitting in the pack queue.", "output": "{\"order_id\": 1240, \"status\": \"processing\", \"eta\": null}", "tests": "format"}
+{"id": "ho-03", "instruction": "Return the order status as JSON.", "input": "Order 5503 was handed to the customer on 2026-06-01.", "output": "{\"order_id\": 5503, \"status\": \"delivered\", \"eta\": null}", "tests": "format"}
+{"id": "ho-04", "instruction": "What is the capital of the country where order 5503 was delivered?", "input": "Order 5503 was handed to the customer on 2026-06-01.", "output": "REFUSE_OR_UNKNOWN", "tests": "fact"}
