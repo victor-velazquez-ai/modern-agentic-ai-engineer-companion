@@ -1,0 +1,17 @@
+{
+  "__today__": "2026-06-20",
+  "__note__": "Sidecar ACL + freshness metadata. In production these come from each source system's own permission API and last-modified time, not a hand-maintained file. 'acl' lists the groups that may READ the doc; a doc with no entry here is NOT indexed (fail closed).",
+
+  "pto-policy.md":            {"acl": ["everyone"],            "source": "wiki/hr/pto",                 "updated": "2026-03-01"},
+  "expense-reimbursement.md": {"acl": ["everyone"],            "source": "wiki/finance/expenses",       "updated": "2026-02-15"},
+  "remote-work.md":           {"acl": ["everyone"],            "source": "wiki/people/remote-work",     "updated": "2026-04-10"},
+  "security-onboarding.md":   {"acl": ["everyone"],            "source": "wiki/security/onboarding",    "updated": "2026-05-02"},
+  "vpn-access.md":            {"acl": ["everyone"],            "source": "wiki/it/vpn",                 "updated": "2026-01-20"},
+  "onboarding-checklist.md":  {"acl": ["everyone"],            "source": "wiki/people/onboarding",      "updated": "2026-05-20"},
+  "benefits-overview.md":     {"acl": ["everyone"],            "source": "wiki/hr/benefits",            "updated": "2026-04-28"},
+  "code-of-conduct.md":       {"acl": ["everyone"],            "source": "wiki/legal/code-of-conduct",  "updated": "2025-09-01"},
+  "incident-runbook.md":      {"acl": ["everyone", "engineering"], "source": "wiki/eng/incident-runbook","updated": "2026-05-15"},
+  "engineering-handbook.md":  {"acl": ["everyone", "engineering"], "source": "wiki/eng/handbook",        "updated": "2026-03-22"},
+
+  "compensation-sheet.md":    {"acl": ["finance-leadership"],  "source": "drive/finance/comp-bands",    "updated": "2026-06-01"}
+}

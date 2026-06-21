@@ -183,7 +183,7 @@ _DEVIATION_CUES: dict[ClauseType, tuple[str, ...]] = {
     ClauseType.GOVERNING_LAW: ("courts of", "laws of england", "foreign", "arbitration in"),
     ClauseType.WARRANTY: ("as is", "as-is", "no warranty", "disclaims all warranties"),
     ClauseType.IP_OWNERSHIP: ("all intellectual property", "including pre-existing", "background ip", "assigns all"),
-    ClauseType.DATA_PROTECTION: ("no dpa", "without a dpa", "sub-process", "outside the", "30 days of becoming aware"),
+    ClauseType.DATA_PROTECTION: ("no dpa", "without a dpa", "any sub-processor", "outside the approved regions", "30 days of becoming aware"),
 }
 
 

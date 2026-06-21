@@ -1,0 +1,10 @@
+# An unrepairable read: the vendor is blank, the currency is not an ISO-4217 code, the total is
+# non-numeric, and there are no line items. The mock OCR cannot recover these from the source, so
+# the repair budget is exhausted and the item dead-letters with a precise error list -- the
+# difference between a *fixable* read (INV-1002) and a *broken* one.
+# Expected outcome: validation fails, repairs exhausted -> DEAD_LETTER.
+invoice_number: INV-1004
+vendor:
+invoice_date: 2026-03-07
+currency: Dollars
+total: see attached

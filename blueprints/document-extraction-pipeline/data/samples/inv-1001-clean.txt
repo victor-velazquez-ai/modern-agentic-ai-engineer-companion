@@ -1,0 +1,9 @@
+# A clean invoice: every field already well-formed; line items reconcile to the total.
+# Expected outcome in the demo: extracts and validates on the FIRST pass, high confidence -> ACCEPTED.
+invoice_number: INV-1001
+vendor: Acme Industrial Supply
+invoice_date: 2026-03-04
+currency: USD
+total: 240.00
+LINE: Steel widget (10mm) | 2 | 60.00 | 120.00
+LINE: Brass gadget | 1 | 120.00 | 120.00

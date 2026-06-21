@@ -1,0 +1,10 @@
+# The POISON outlier: a 400-page corrupt scan. The loader's oversize guard dead-letters it
+# BEFORE any model spend, so one bad document cannot wedge the worker or burn the budget. We
+# mark it as 400 pages in the sample index; its body is deliberately tiny here (the guard trips
+# on the page count, not the text) so the repo stays small.
+# Expected outcome: dead-lettered by the poison/oversize guard, zero model calls.
+invoice_number: INV-9999
+vendor: (corrupt scan -- 400 pages of unreadable OCR noise)
+invoice_date: ????
+currency: ???
+total: ???

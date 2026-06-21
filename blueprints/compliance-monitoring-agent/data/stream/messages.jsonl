@@ -1,0 +1,20 @@
+# Mock monitored stream — ~8 communications/transactions, some violating, some routine.
+# One JSON object per line (blank lines and lines starting with '#' are ignored by the loader).
+#
+# Schema:
+#   id      : stable item id
+#   channel : where it came from (email | chat | txn) — informational
+#   text    : the content the screener reads (and retrieves a policy rule against)
+#   amount  : numeric USD amount for transaction items (null for comms) — fed to the anomaly check
+#   expected: the label a compliance reviewer assigned (clear | flag) — used only to sanity-check the demo
+#
+# This is the file you replace with a connector to your real monitored streams (comms, txns, access logs).
+{"id": "msg-001", "channel": "email", "text": "Hi team, sending over the customer's full account number 4012888812345678 and SSN 123-45-6789 so support can verify them faster.", "amount": null, "expected": "flag"}
+{"id": "msg-002", "channel": "chat", "text": "Can we move the Tuesday standup to 10am? Also the Q3 product one-pager is now public on the website.", "amount": null, "expected": "clear"}
+{"id": "msg-003", "channel": "email", "text": "Tell the client it's basically guaranteed 20% returns, risk-free — they will double their money by year end.", "amount": null, "expected": "flag"}
+{"id": "msg-004", "channel": "chat", "text": "Heads up before it's announced: the merger with Acme closes Friday. Keep this MNPI between us, might be worth trading on.", "amount": null, "expected": "flag"}
+{"id": "msg-005", "channel": "txn", "text": "Wire payment to vendor Globex for consulting services, invoice #5567.", "amount": 4200.0, "expected": "clear"}
+{"id": "msg-006", "channel": "txn", "text": "Split the payment into two transfers of 9,900 each so it stays just under the threshold and we skip the report.", "amount": 9900.0, "expected": "flag"}
+{"id": "msg-007", "channel": "txn", "text": "Outbound payment to counterparty on the OFAC sanctions list in a prohibited jurisdiction.", "amount": 250000.0, "expected": "flag"}
+{"id": "msg-008", "channel": "email", "text": "Submitting my expense report: a duplicate dinner receipt and a personal weekend trip billed as a client meeting, no receipt attached.", "amount": null, "expected": "flag"}
+{"id": "msg-009", "channel": "chat", "text": "Thanks for the great onboarding session yesterday, the new dashboard looks fantastic!", "amount": null, "expected": "clear"}

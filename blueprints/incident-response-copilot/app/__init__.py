@@ -18,5 +18,50 @@ from __future__ import annotations
 
 from . import _bootstrap  # noqa: F401  (side-effect: wire the composed patterns onto sys.path)
 
-__all__ = ["_bootstrap"]
+# Re-export the solution surface so callers (demo.py, evals/) import from one place. These imports
+# come *after* _bootstrap so the composed pattern packages are already on sys.path.
+from .triage import (  # noqa: E402
+    Alert,
+    ProposedAction,
+    Severity,
+    Triage,
+    severity_from_metrics,
+)
+from .knowledge import Knowledge, RunbookHit, load_corpus  # noqa: E402
+from .correlate import correlate  # noqa: E402
+from .approve import (  # noqa: E402
+    ApprovalOutcome,
+    Approver,
+    GateReport,
+    auto_approve,
+    auto_deny,
+    review_and_execute,
+)
+from .postmortem import Postmortem, draft_postmortem  # noqa: E402
+
+__all__ = [
+    "_bootstrap",
+    # triage
+    "Alert",
+    "ProposedAction",
+    "Severity",
+    "Triage",
+    "severity_from_metrics",
+    # knowledge (rag-pipeline)
+    "Knowledge",
+    "RunbookHit",
+    "load_corpus",
+    # correlation (agent-loop + mcp + rag + observability)
+    "correlate",
+    # approval gate (HITL)
+    "ApprovalOutcome",
+    "Approver",
+    "GateReport",
+    "auto_approve",
+    "auto_deny",
+    "review_and_execute",
+    # postmortem
+    "Postmortem",
+    "draft_postmortem",
+]
 __version__ = "0.1.0"

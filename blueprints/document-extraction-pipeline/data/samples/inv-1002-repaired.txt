@@ -1,0 +1,11 @@
+# The corrected read for INV-1002 after the validation errors were fed back to the model:
+# date normalized to ISO-8601, the "$" and thousands comma stripped from the total.
+# In production the model produces this itself from the repair prompt; offline the demo hands
+# it to the repair turn so the repaired branch is deterministic.
+invoice_number: INV-1002
+vendor: Globex Logistics
+invoice_date: 2026-03-05
+currency: USD
+total: 1450.00
+LINE: Freight forwarding | 1 | 1200.00 | 1200.00
+LINE: Customs handling | 1 | 250.00 | 250.00

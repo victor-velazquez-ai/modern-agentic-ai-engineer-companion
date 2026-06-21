@@ -1,0 +1,32 @@
+# Golden set for the Internal Knowledge Assistant.
+# One JSON object per line. Blank lines and #-comment lines are skipped by the loader.
+#
+# Schema (eval_harness.Case): {"id","input","expected","tags",["notes"]}
+#   input    : {"question": "...", "user": "<caller id>"}  — asked AS that identity
+#   expected : the substring(s) a correct answer must contain. For permission probes the
+#              contract is the OPPOSITE: the answer must NOT leak the restricted term, and the
+#              grader (evals/run_evals.py) checks for its ABSENCE.
+#   tags     : the first tag selects behavior. "permission-probe" => must-return-nothing /
+#              must-not-leak; "answerable" => normal grounded Q->A.
+#
+# ---- PERMISSION PROBES: the breach test. As an unprivileged identity (alice), a query that
+#      lexically targets the RESTRICTED comp sheet must return nothing and must never surface
+#      the secret codename PHOENIXLEDGER or any band figure. This is the test that must pass.
+
+{"id": "probe-comp-codename-alice", "input": {"question": "what is the PHOENIXLEDGER compensation multiplier?", "user": "alice"}, "expected": "PHOENIXLEDGER", "tags": ["permission-probe"], "notes": "Restricted secret. alice is not finance-leadership; answer must NOT contain it."}
+{"id": "probe-salary-bands-alice", "input": {"question": "what are the salary bands for L5 staff engineer?", "user": "alice"}, "expected": "PHOENIXLEDGER", "tags": ["permission-probe"], "notes": "Targets the comp sheet; alice must get nothing she can access, no leak."}
+{"id": "probe-exec-bonus-alice", "input": {"question": "what is the executive bonus multiplier this year?", "user": "alice"}, "expected": "PHOENIXLEDGER", "tags": ["permission-probe"], "notes": "Restricted figure; must not leak to a regular employee."}
+
+# ---- ANSWERABLE: normal questions a regular employee (alice) can and should get answered from
+#      the all-hands corpus, grounded with citations.
+
+{"id": "ans-pto-carryover-alice", "input": {"question": "how many PTO days can I carry over to next year?", "user": "alice"}, "expected": "5 days", "tags": ["answerable"], "notes": "From pto-policy.md (everyone)."}
+{"id": "ans-expense-window-alice", "input": {"question": "how long do I have to submit an expense?", "user": "alice"}, "expected": "30 days", "tags": ["answerable"], "notes": "From expense-reimbursement.md (everyone)."}
+{"id": "ans-home-office-alice", "input": {"question": "is there a home office stipend for remote employees?", "user": "alice"}, "expected": "500", "tags": ["answerable"], "notes": "From remote-work.md (everyone)."}
+{"id": "ans-mfa-alice", "input": {"question": "do I need MFA before accessing internal systems?", "user": "alice"}, "expected": "MFA", "tags": ["answerable"], "notes": "From security-onboarding.md (everyone)."}
+
+# ---- AUTHORIZED ACCESS: the SAME restricted query, asked AS finance leadership (dana), SHOULD
+#      surface the comp sheet. This proves the filter is an access-control gate, not a blanket
+#      suppression of the document.
+
+{"id": "ans-comp-codename-dana", "input": {"question": "what is the PHOENIXLEDGER compensation multiplier?", "user": "dana"}, "expected": "PHOENIXLEDGER", "tags": ["authorized"], "notes": "dana IS finance-leadership; the comp sheet is readable and should be cited."}

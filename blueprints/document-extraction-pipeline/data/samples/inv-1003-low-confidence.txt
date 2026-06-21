@@ -1,0 +1,11 @@
+# A well-typed but SUSPECT invoice: every field is valid, but the single line item (1200) does
+# not reconcile with the stated total (1850) -- the cheap, strongest signal that the OCR dropped
+# a row. The fields pass validation, so this is NOT a dead-letter; it is exactly the "last 20%"
+# the confidence scorer must catch.
+# Expected outcome: validates, but reconciliation gap drops confidence below threshold -> REVIEW.
+invoice_number: INV-1003
+vendor: Initech Office Solutions
+invoice_date: 2026-03-06
+currency: USD
+total: 1850.00
+LINE: Annual support contract | 1 | 1200.00 | 1200.00

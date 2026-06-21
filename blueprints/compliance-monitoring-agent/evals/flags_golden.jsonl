@@ -1,0 +1,26 @@
+# Golden set for the compliance screener — co-built with compliance experts (Ch 22).
+#
+# Each row is an eval_harness.Case: {id, input, expected, tags}. The candidate under test is the
+# screener's classify step (input text -> "clear" | "flag"); the grader is ExactMatch on the label.
+#
+# Tags encode the precision/recall trade-off you tune WITH stakeholders, so the runner can score
+# each side separately instead of collapsing to one accuracy number:
+#   must-flag  : true violations the screener MUST catch  -> drives RECALL (a miss is a regulatory failure)
+#   must-clear : routine activity the screener MUST pass   -> drives PRECISION (a false positive buries the team)
+# The rule-family tags (pii / mnpi / aml / sanctions / ...) let you find which obligation regressed.
+#
+# Replace/extend this with cases your compliance experts label. Re-run evals before shipping a prompt
+# or model change; gate the build on it (eval_harness.gate) so quality is a red check, not a vibe.
+{"id": "ev-pii-01", "input": "Emailing the customer's full SSN 123-45-6789 and card number 4012888812345678 to the vendor.", "expected": "flag", "tags": ["must-flag", "pii", "comm"], "notes": "Raw PII over email -> COMM-01."}
+{"id": "ev-pii-02", "input": "Customer asked us to mask all but the last four digits of their account number on the statement.", "expected": "clear", "tags": ["must-clear", "pii", "comm"], "notes": "Discusses PII handling correctly; not a violation."}
+{"id": "ev-returns-01", "input": "Tell them it's a guaranteed, risk-free 20% return and they will double their money.", "expected": "flag", "tags": ["must-flag", "returns", "comm"], "notes": "Guaranteed returns -> COMM-02."}
+{"id": "ev-returns-02", "input": "Our balanced fund has historically returned around 6%, but past performance does not guarantee future results.", "expected": "clear", "tags": ["must-clear", "returns", "comm"], "notes": "Balanced, includes risk language."}
+{"id": "ev-mnpi-01", "input": "Before it's public: the merger closes Friday, this is MNPI, maybe worth trading on.", "expected": "flag", "tags": ["must-flag", "mnpi", "comm"], "notes": "Material non-public info -> COMM-03."}
+{"id": "ev-mnpi-02", "input": "The earnings call is scheduled for next Thursday and the press release is already on the IR site.", "expected": "clear", "tags": ["must-clear", "mnpi", "comm"], "notes": "Already public; routine."}
+{"id": "ev-harass-01", "input": "You're an idiot and I hate working with you, just shut up in meetings.", "expected": "flag", "tags": ["must-flag", "harassment", "comm"], "notes": "Abusive language -> COMM-04."}
+{"id": "ev-aml-01", "input": "Split the payment into transfers of 9,900 each to stay just under the reporting threshold.", "expected": "flag", "tags": ["must-flag", "aml", "txn"], "notes": "Structuring under USD 10,000 -> TXN-01."}
+{"id": "ev-aml-02", "input": "Routine vendor payment of 4,200 for consulting services, invoice attached.", "expected": "clear", "tags": ["must-clear", "aml", "txn"], "notes": "Ordinary below-threshold payment."}
+{"id": "ev-sanctions-01", "input": "Outbound payment to a counterparty on the OFAC sanctions list in a prohibited jurisdiction.", "expected": "flag", "tags": ["must-flag", "sanctions", "txn"], "notes": "Sanctioned counterparty -> TXN-02."}
+{"id": "ev-expense-01", "input": "Expense report with a duplicate dinner receipt and a personal trip billed as a client meeting, no receipt.", "expected": "flag", "tags": ["must-flag", "expenses", "txn"], "notes": "Duplicate + personal expense -> TXN-03."}
+{"id": "ev-gen-01", "input": "Can we move the standup to 10am? Also the Q3 one-pager is public on the website now.", "expected": "clear", "tags": ["must-clear", "general", "comm"], "notes": "Routine scheduling + public info -> GEN-01."}
+{"id": "ev-gen-02", "input": "Thanks for the great onboarding session, the new dashboard looks fantastic!", "expected": "clear", "tags": ["must-clear", "general", "comm"], "notes": "Pleasantry; no violation."}
