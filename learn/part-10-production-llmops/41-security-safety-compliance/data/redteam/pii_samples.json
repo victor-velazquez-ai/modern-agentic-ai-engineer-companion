@@ -1,0 +1,31 @@
+{
+  "note": "Fake PII for testing redaction. None of these identify a real person.",
+  "samples": [
+    {
+      "id": "pii-email",
+      "text": "Please email the receipt to jordan.fake@example.com today.",
+      "expect_redacted": [
+        "EMAIL"
+      ]
+    },
+    {
+      "id": "pii-phone",
+      "text": "Call me back at 555-0100 when the order ships.",
+      "expect_redacted": [
+        "PHONE"
+      ]
+    },
+    {
+      "id": "pii-ssn",
+      "text": "My reference SSN is 000-00-0000 for the test account.",
+      "expect_redacted": [
+        "SSN"
+      ]
+    },
+    {
+      "id": "pii-clean",
+      "text": "The build passed and the dashboard is green.",
+      "expect_redacted": []
+    }
+  ]
+}
