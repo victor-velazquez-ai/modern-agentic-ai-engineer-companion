@@ -178,6 +178,26 @@ class AnalyticsCopilot:
             result=result, error=error, trace_text=trace_text,
         )
 
+    def check_sql(self, sql: str, *, metric: str = "revenue") -> CopilotAnswer:
+        """Verify (and, only if it passes, execute) a *raw* SQL string.
+
+        This is the path a live LLM's raw output takes: a candidate query that did *not* come from
+        the trusted mock planner. It exists so the safety contract can be tested honestly — the NL
+        planner sanitizes input, so the only real test of the verifier is to hand it the kind of
+        unsafe SQL a model might hallucinate. A blocked query never reaches the warehouse.
+        """
+        plan = SqlPlan(question=f"[raw sql] {sql[:60]}", sql=sql, metric=metric)
+        verdict = self.verifier.verify(plan)
+        if verdict.blocked:
+            return CopilotAnswer(question=plan.question, sql=sql, plan=plan, verify=verdict)
+        tracer = Tracer()
+        with tracer.run("text-to-sql-raw"):
+            result, error = self._execute_via_agent_loop(plan, tracer)
+        return CopilotAnswer(
+            question=plan.question, sql=sql, plan=plan, verify=verdict,
+            result=result, error=error,
+        )
+
     # -- composition with agent-loop ------------------------------------------------
     def _execute_via_agent_loop(
         self, plan: SqlPlan, tracer: Tracer

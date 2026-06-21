@@ -147,11 +147,24 @@ _HEADING_RE = re.compile(
 )
 
 
+def _cue_hits(cue: str, haystack: str) -> bool:
+    """True if ``cue`` is present in ``haystack`` (both lowercased).
+
+    Short, purely-alphabetic cues (acronyms like ``"nda"``) are matched on *word boundaries* so a
+    three-letter cue cannot fire on the inside of an unrelated word — e.g. ``"nda"`` must not match
+    "sta**nda**rd". Stems (``"indemnif"``, ``"warrant"``) and multi-word/space-padded phrases keep
+    plain substring matching, which is what makes them robust to inflection.
+    """
+    if cue.isalpha() and len(cue) <= 4:
+        return re.search(rf"\b{re.escape(cue)}\b", haystack) is not None
+    return cue in haystack
+
+
 def classify(text: str, heading: str = "") -> ClauseType:
     """Pick the best :class:`ClauseType` for a clause body + heading (offline heuristic)."""
     haystack = f"{heading}\n{text}".lower()
     for clause_type, cues in _TYPE_CUES:
-        if any(cue in haystack for cue in cues):
+        if any(_cue_hits(cue, haystack) for cue in cues):
             return clause_type
     return ClauseType.OTHER
 

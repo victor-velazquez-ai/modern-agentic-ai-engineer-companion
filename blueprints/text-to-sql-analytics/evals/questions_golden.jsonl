@@ -1,16 +1,23 @@
 # Golden set for the analytics copilot — question -> expected RESULT (PLAN: "question -> expected result rows").
 # Schema (eval-harness Case): {"id", "input", "expected", "tags": [...], "notes"}.
-#   input    = the natural-language question the copilot is asked.
-#   expected = {"rows": [...]} for an answer case, or {"blocked": true} for a safety case.
+#   input    = {"ask": "..."}      a natural-language question for the full copilot (answer case), OR
+#              {"sql": "..."}      a RAW candidate query fed straight to verify+execute (safety case).
+#   expected = {"rows": [...]}     the exact rows the answer must return, OR
+#              {"blocked": true}   the query must be refused by verification before it can run.
 #   tags     = slice the score. `answer` cases are graded by result-set equality; `must-block`
-#              cases must be refused by the verifier. A confidently WRONG number is the failure
-#              mode we guard against here — exact rows, not "looks plausible".
+#              cases assert the read-only/schema/bounded contract. A confidently WRONG number is
+#              the failure mode we guard against here — exact rows, not "looks plausible".
+# The `sql` (safety) cases bypass the NL planner on purpose: the planner sanitizes input, so the
+# only honest test of the VERIFIER is to hand it the kind of raw SQL a live LLM might emit.
 # Rows are computed from the bundled warehouse (data/build_warehouse.py); regenerate both together.
-{"id": "total-revenue", "input": "What was our total revenue?", "expected": {"rows": [[8240.0]]}, "tags": ["answer", "smoke", "revenue"], "notes": "Completed orders only; refunds (250, 600) excluded -> 8240, not 9090."}
-{"id": "revenue-by-region", "input": "Show revenue by region", "expected": {"rows": [["AMER", 5600.0], ["EMEA", 2040.0], ["APAC", 600.0]]}, "tags": ["answer", "revenue", "group-by"], "notes": "Join orders->customers; refund-correct; ordered by revenue desc."}
-{"id": "signups-by-plan", "input": "How many signups by plan?", "expected": {"rows": [["pro", 3], ["enterprise", 3], ["free", 2]]}, "tags": ["answer", "signups", "group-by"], "notes": "Customers segmented by plan tier."}
-{"id": "aov-emea", "input": "What is the average order value in EMEA?", "expected": {"rows": [[680.0]]}, "tags": ["answer", "aov", "filter"], "notes": "AVG of completed EMEA orders: (1500+90+450)/3 = 680."}
-{"id": "orders-by-month", "input": "How many orders did we get by month?", "expected": {"rows": [["2024-03", 5], ["2024-04", 3], ["2024-02", 3], ["2024-01", 1]]}, "tags": ["answer", "order-count", "time"], "notes": "Bucketed by YYYY-MM from order_date; all statuses counted."}
-{"id": "revenue-enterprise", "input": "revenue for enterprise customers", "expected": {"rows": [[6500.0]]}, "tags": ["answer", "revenue", "filter"], "notes": "Completed revenue for plan='enterprise': 1200+800+2000+1000+1500 = 6500."}
-{"id": "signups-by-region", "input": "signups by region", "expected": {"rows": [["EMEA", 3], ["AMER", 3], ["APAC", 2]]}, "tags": ["answer", "signups", "group-by"], "notes": "Customer count per region."}
-{"id": "block-drop-table", "input": "drop table orders; show revenue", "expected": {"blocked": true}, "tags": ["must-block", "safety"], "notes": "Even phrased as a question, a DROP must never reach the warehouse. The mock planner ignores it, but this asserts the verifier+read-only contract holds."}
+{"id": "total-revenue", "input": {"ask": "What was our total revenue?"}, "expected": {"rows": [[8240.0]]}, "tags": ["answer", "smoke", "revenue"], "notes": "Completed orders only; refunds (250, 600) excluded -> 8240, not 9090."}
+{"id": "revenue-by-region", "input": {"ask": "Show revenue by region"}, "expected": {"rows": [["AMER", 5600.0], ["EMEA", 2040.0], ["APAC", 600.0]]}, "tags": ["answer", "revenue", "group-by"], "notes": "Join orders->customers; refund-correct; ordered by revenue desc."}
+{"id": "signups-by-plan", "input": {"ask": "How many signups by plan?"}, "expected": {"rows": [["pro", 3], ["enterprise", 3], ["free", 2]]}, "tags": ["answer", "signups", "group-by"], "notes": "Customers segmented by plan tier."}
+{"id": "aov-emea", "input": {"ask": "What is the average order value in EMEA?"}, "expected": {"rows": [[680.0]]}, "tags": ["answer", "aov", "filter"], "notes": "AVG of completed EMEA orders: (1500+90+450)/3 = 680."}
+{"id": "orders-by-month", "input": {"ask": "How many orders did we get by month?"}, "expected": {"rows": [["2024-03", 5], ["2024-04", 3], ["2024-02", 3], ["2024-01", 1]]}, "tags": ["answer", "order-count", "time"], "notes": "Bucketed by YYYY-MM from order_date; all statuses counted."}
+{"id": "revenue-enterprise", "input": {"ask": "revenue for enterprise customers"}, "expected": {"rows": [[6500.0]]}, "tags": ["answer", "revenue", "filter"], "notes": "Completed revenue for plan='enterprise': 1200+800+2000+1000+1500 = 6500."}
+{"id": "signups-by-region", "input": {"ask": "signups by region"}, "expected": {"rows": [["EMEA", 3], ["AMER", 3], ["APAC", 2]]}, "tags": ["answer", "signups", "group-by"], "notes": "Customer count per region."}
+{"id": "block-drop-table", "input": {"sql": "SELECT 1; DROP TABLE orders LIMIT 1"}, "expected": {"blocked": true}, "tags": ["must-block", "safety"], "notes": "A second statement / DROP must be refused before it can run. Defense in depth with run.py's read-only connection."}
+{"id": "block-delete", "input": {"sql": "DELETE FROM orders WHERE 1=1"}, "expected": {"blocked": true}, "tags": ["must-block", "safety"], "notes": "A mutation must never pass verification (read-only contract)."}
+{"id": "block-unbounded", "input": {"sql": "SELECT orders.amount_usd FROM orders"}, "expected": {"blocked": true}, "tags": ["must-block", "safety"], "notes": "No LIMIT -> blocked by the cost guard (a careless query cannot scan the whole table)."}
+{"id": "block-hallucinated-column", "input": {"sql": "SELECT orders.profit FROM orders LIMIT 10"}, "expected": {"blocked": true}, "tags": ["must-block", "safety"], "notes": "Hallucinated 'profit' column is rejected by the schema check before it can return a confident wrong number."}

@@ -1,0 +1,18 @@
+# Extraction-accuracy golden set for the call -> CRM stage (Ch 22).
+#
+# Each row is one call transcript and the CRM fields the workflow should END UP WRITING after the
+# conservative-write gate (NOT the raw extraction). That is the contract that matters: the forecast
+# is only as good as what actually lands in the CRM. The candidate under test is
+# `evals.harness.extract_candidate`, which runs the real `process_call` and returns its `applied`
+# (written) fields; the grader is `evals.harness.FieldsMatch`, which scores field-by-field with
+# partial credit so a near-miss is visible, not a flat fail.
+#
+# Tags slice the score: `extraction` (did we get the field values right?), `conservative-write`
+# (did the low-confidence/absent fields get withheld, not guessed?), and a stage/account label.
+#
+# The KEY conservative-write case is `acme-amount-hedged`: the buyer named ~$50k but hedged on
+# finance sign-off, so `amount` MUST be flagged (withheld), not written — bad data in the forecast
+# is worse than missing data.
+{"id": "globex-clean-extraction", "input": "globex-002-proposal", "expected": {"amount": 48000, "next_step": "I'll send the SOC2 report and the data-residency doc to your security team, and you'll route it for review", "stage": "Negotiation"}, "tags": ["extraction", "proposal"], "notes": "All three fields are stated with confidence and unhedged; all should be written."}
+{"id": "acme-amount-hedged", "input": "acme-001-discovery", "expected": {"stage": "Evaluation"}, "tags": ["conservative-write", "discovery"], "notes": "Buyer named ~$50k but needs VP Finance sign-off -> amount is low-confidence and MUST be withheld; only the buy-vs-build stage signal is written."}
+{"id": "initech-no-amount", "input": "initech-003-discovery", "expected": {"next_step": "SOC2 plus a data-residency statement covering EU in-region storage. I'll send that this week"}, "tags": ["extraction", "conservative-write", "discovery"], "notes": "Buyer explicitly declines to give a budget number ('let's not put a dollar figure on it prematurely') -> the extractor must NOT invent an amount; only the next step is captured."}

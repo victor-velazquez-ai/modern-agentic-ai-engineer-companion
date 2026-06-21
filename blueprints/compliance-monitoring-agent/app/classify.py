@@ -85,19 +85,44 @@ ASSESSMENT_SCHEMA: dict[str, object] = {
 }
 
 
+def _best_cue_rule(text: str) -> tuple[str, int]:
+    """Return the rule with the most violation cues present in ``text`` (``("", 0)`` if none).
+
+    Cues are the *evidence* a violation actually occurred. Scanning every rule's cues (not only
+    the retrieved rule's) keeps recall up when retrieval surfaces a near-miss rule, while the
+    "at least one cue" bar below keeps precision up on routine items that have no cues at all.
+    """
+    best_rule, best_hits = "", 0
+    for rid, cues in _VIOLATION_CUES.items():
+        hits = sum(1 for c in cues if c in text)
+        if hits > best_hits:
+            best_rule, best_hits = rid, hits
+    return best_rule, best_hits
+
+
 def _heuristic_assessment(item_text: str, match: PolicyMatch) -> Assessment:
     """Deterministic clear/flag decision for MOCK mode (no model, no spend).
 
-    Logic: if the item text contains a violation cue for the *retrieved* rule (or the retrieval
-    landed on a non-benign rule with strong score), flag it citing that rule; otherwise clear.
-    Confidence blends cue strength and retrieval score so it is bounded and explainable.
+    The decision is **evidence-gated**: a flag requires at least one concrete violation *cue* in
+    the text, not merely that retrieval returned some rule (it always does). This is what keeps
+    precision sane — routine business activity has no cues, so it clears, instead of every item
+    being flagged because the retriever had to pick a nearest rule.
+
+    Citation policy: cite the cue-supported rule. If retrieval already landed on that rule, the two
+    signals agree and confidence is higher; if retrieval surfaced a near-miss, we still cite the
+    rule the *evidence* points at. Confidence blends cue strength and retrieval agreement so it is
+    bounded and explainable.
     """
     text = item_text.lower()
-    rule_id = match.rule_id
-    cues = _VIOLATION_CUES.get(rule_id, ())
-    cue_hits = sum(1 for c in cues if c in text)
+    retrieved_rule = match.rule_id
+    retrieved_cues = _VIOLATION_CUES.get(retrieved_rule, ())
+    retrieved_hits = sum(1 for c in retrieved_cues if c in text)
 
-    if match.benign and cue_hits == 0:
+    # The rule the textual evidence most supports (may differ from the retrieved rule).
+    cue_rule, cue_hits = _best_cue_rule(text)
+
+    if cue_hits == 0:
+        # No concrete violation evidence anywhere -> clear (the precision-preserving default).
         return Assessment(
             label="clear",
             confidence=round(min(0.6 + match.score, 0.95), 3),
@@ -105,13 +130,16 @@ def _heuristic_assessment(item_text: str, match: PolicyMatch) -> Assessment:
             reason="Routine business activity; no policy rule indicates a violation.",
         )
 
-    # Non-benign retrieval and/or explicit cue -> flag, citing the retrieved rule.
-    cue_strength = min(cue_hits / 2.0, 1.0)
-    retrieval_strength = min(match.score / 2.0, 1.0)
-    confidence = round(0.5 + 0.5 * max(cue_strength, retrieval_strength), 3)
+    # There IS evidence -> flag, citing the cue-supported rule.
+    rule_id = retrieved_rule if retrieved_hits > 0 else cue_rule
+    hits = retrieved_hits if retrieved_hits > 0 else cue_hits
+    retrieval_agrees = retrieved_hits > 0  # retrieval and the cues point at the same rule
+    cue_strength = min(hits / 2.0, 1.0)
+    confidence = round(0.5 + 0.5 * cue_strength * (1.0 if retrieval_agrees else 0.85), 3)
     reason = (
-        f"Item appears to violate {rule_id} ({match.title}); "
-        f"matched {cue_hits} policy cue(s) and retrieval grounded the rule."
+        f"Item appears to violate {rule_id}; matched {hits} policy cue(s)"
+        + (" and retrieval grounded the same rule." if retrieval_agrees
+           else " (retrieval surfaced a near-miss; cited the cue-supported rule).")
     )
     return Assessment(label="flag", confidence=confidence, rule_id=rule_id, reason=reason)
 

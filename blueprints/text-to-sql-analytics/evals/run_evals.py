@@ -95,10 +95,18 @@ class ResultMatch:
 
 
 def build_candidate(copilot: AnalyticsCopilot):
-    """Adapt the copilot to the eval-harness candidate shape: ``question -> graded dict``."""
+    """Adapt the copilot to the eval-harness candidate shape: ``input -> graded dict``.
 
-    def candidate(question: str) -> dict:
-        answer: CopilotAnswer = copilot.ask(question, trace=False)
+    The input is a dict: ``{"ask": "..."}`` runs the full NL copilot (answer cases), while
+    ``{"sql": "..."}`` feeds a raw query straight to verify+execute (safety cases). Both return
+    the same :meth:`CopilotAnswer.to_dict` shape the grader inspects.
+    """
+
+    def candidate(item: dict) -> dict:
+        if "sql" in item:
+            answer: CopilotAnswer = copilot.check_sql(item["sql"])
+        else:
+            answer = copilot.ask(item["ask"], trace=False)
         return answer.to_dict()
 
     return candidate
@@ -110,7 +118,16 @@ def run_evals(path: Path = GOLDEN) -> Report:
     return run(build_candidate(copilot), cases, ResultMatch(), threshold=PASS_THRESHOLD)
 
 
+def _use_utf8_stdout() -> None:
+    """Best-effort: the eval-harness report uses a ✗ glyph; make sure a Windows console can print it."""
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
+
 def main() -> int:
+    _use_utf8_stdout()
     report = run_evals()
     print(report.render())
     # CI gate: any failing case is a non-zero exit (a wrong number must break the build).

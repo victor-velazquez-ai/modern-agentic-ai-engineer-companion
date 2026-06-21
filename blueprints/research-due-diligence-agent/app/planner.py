@@ -79,17 +79,28 @@ class SubQuestion:
         return self.subtask.capability
 
 
+# Capitalized words that commonly *start* a question but are not the subject. We skip these so
+# "Should we acquire Acme Vector DB Inc.?" yields "Acme Vector DB Inc.", not "Should".
+_LEADING_NONSUBJECT = frozenset(
+    """should could would what when where which who why how is are do does can may might
+    we i evaluate assess research analyze review the a an""".split()
+)
+
+
 def _subject_of(question: str) -> str:
     """Pull a plausible subject (a proper noun / capitalized phrase) out of the question.
 
-    Falls back to a neutral "the target" so the sub-question templates always read cleanly.
-    This is a cheap heuristic, not entity extraction — on the live path the planner model
-    would name the subject directly.
+    Prefers the first run of Capitalized words that is not a leading question/auxiliary word
+    (so "Should we acquire Acme Vector DB" → "Acme Vector DB"). Falls back to a neutral
+    "the target" so the sub-question templates always read cleanly. This is a cheap heuristic,
+    not entity extraction — on the live path the planner model would name the subject directly.
     """
-    # Prefer a run of Capitalized words (e.g. "Acme Vector DB").
-    m = re.search(r"\b([A-Z][\w&.-]+(?:\s+[A-Z][\w&.-]+)*)", question)
-    if m:
-        return m.group(1).strip()
+    for m in re.finditer(r"\b([A-Z][\w&.-]*(?:\s+[A-Z][\w&.-]*)*)", question):
+        phrase = m.group(1).strip()
+        first = phrase.split()[0].lower().strip(".")
+        if first in _LEADING_NONSUBJECT:
+            continue
+        return phrase
     return "the target"
 
 

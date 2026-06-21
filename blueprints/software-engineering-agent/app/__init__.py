@@ -36,6 +36,7 @@ from .migrate import (
     Migration,
     MigrationManifest,
     MigrationResult,
+    build_migration,
     rename_call_sites,
 )
 from .pr import (
@@ -54,6 +55,7 @@ __all__ = [
     "MigrationManifest",
     "MigrationResult",
     "FileTask",
+    "build_migration",
     "rename_call_sites",
     # pr (structured diff for human review — never auto-merge)
     "PullRequest",
