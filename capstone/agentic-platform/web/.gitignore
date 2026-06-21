@@ -1,0 +1,11 @@
+# Next.js / Node build artifacts and secrets — never commit these.
+/node_modules
+/.next
+/out
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# Local env files (only .env.local.example is committed).
+.env.local
+.env*.local

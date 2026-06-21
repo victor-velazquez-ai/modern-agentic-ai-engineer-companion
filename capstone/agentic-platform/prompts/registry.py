@@ -117,17 +117,22 @@ def _coerce_scalar(value: str) -> Any:
 def _parse_simple_yaml(text: str) -> dict[str, Any]:
     """Minimal YAML for the flat ``meta.yaml`` files this registry ships.
 
-    Handles top-level ``key: value`` pairs and one level of nested mappings under
-    a bare ``key:`` (used for ``params:``). Block scalars (``>-``) collapse to a
-    single string. This is *not* a general YAML parser — it exists only so the
-    registry runs without PyYAML; install PyYAML for anything richer.
+    Handles ``key: value`` pairs and nested mappings under a bare ``key:`` to
+    arbitrary depth, using an indent stack so a child pops back to the right
+    parent (so ``params: {max_tokens, thinking: {type}, effort}`` parses
+    correctly). Block scalars (``>-`` / ``|``) collapse to a single string. This
+    is *not* a general YAML parser (no lists, no flow style) — it exists only so
+    the registry runs without PyYAML; install PyYAML for anything richer.
     """
 
     root: dict[str, Any] = {}
-    current_key: str | None = None
-    current_map: dict[str, Any] | None = None
+    # Stack of (indent, mapping) frames; we attach keys to the deepest frame whose
+    # indent is < the current line's indent.
+    stack: list[tuple[int, dict[str, Any]]] = [(-1, root)]
     block_lines: list[str] | None = None
     block_key: str | None = None
+    block_indent = 0
+    block_target: dict[str, Any] = root
 
     for raw_line in text.splitlines():
         line = raw_line.rstrip("\n")
@@ -136,42 +141,37 @@ def _parse_simple_yaml(text: str) -> dict[str, Any]:
         indent = len(line) - len(line.lstrip(" "))
         stripped = line.strip()
 
-        if block_lines is not None and indent > 0 and ":" not in stripped:
+        # Continuation of an open block scalar (deeper-indented, no key).
+        if block_lines is not None and indent > block_indent and ":" not in stripped:
             block_lines.append(stripped)
             continue
         if block_lines is not None and block_key is not None:
-            root[block_key] = " ".join(block_lines).strip()
+            block_target[block_key] = " ".join(block_lines).strip()
             block_lines = None
             block_key = None
 
-        if indent == 0:
-            current_key, _, value = stripped.partition(":")
-            current_key = current_key.strip()
-            value = value.strip()
-            if value in (">-", ">", "|", "|-"):
-                block_key = current_key
-                block_lines = []
-                current_map = None
-            elif value == "":
-                current_map = {}
-                root[current_key] = current_map
-            else:
-                root[current_key] = _coerce_scalar(value)
-                current_map = None
+        # Pop frames until the top is a parent of this line.
+        while len(stack) > 1 and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1]
+
+        key, _, value = stripped.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if value in (">-", ">", "|", "|-"):
+            block_key = key
+            block_lines = []
+            block_indent = indent
+            block_target = parent
+        elif value == "":
+            nested: dict[str, Any] = {}
+            parent[key] = nested
+            stack.append((indent, nested))
         else:
-            if current_map is None:
-                continue
-            sub_key, _, sub_value = stripped.partition(":")
-            sub_value = sub_value.strip()
-            if sub_value == "":
-                nested: dict[str, Any] = {}
-                current_map[sub_key.strip()] = nested
-                current_map = nested
-            else:
-                current_map[sub_key.strip()] = _coerce_scalar(sub_value)
+            parent[key] = _coerce_scalar(value)
 
     if block_lines is not None and block_key is not None:
-        root[block_key] = " ".join(block_lines).strip()
+        block_target[block_key] = " ".join(block_lines).strip()
     return root
 
 
