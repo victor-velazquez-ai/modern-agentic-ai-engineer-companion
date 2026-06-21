@@ -1,0 +1,37 @@
+# Metadata for the `triage_ticket` prompt — the platform's example of a prompt
+# kept as a versioned, reviewable artifact (Ch 10).
+#
+# Single source of truth for:
+#   - which version is `latest` (the pointer production pins to)
+#   - the model + sampling params this prompt was tuned for
+#   - who owns it and what it does
+#
+# Versioning rule: `vN/` directories are IMMUTABLE once shipped. To change a
+# shipped prompt, add a new `vN+1/` directory and move the `latest` pointer here.
+# Rollback is changing this one line back.
+
+name: triage_ticket
+owner: platform-team@example.com
+description: >-
+  Classifies an inbound support ticket into a category and priority and returns
+  a short rationale. Pairs with llm.complete_structured to get typed output. v2
+  adds an explicit priority rubric and a confidence field.
+
+# The version load("triage_ticket") / load(..., "latest") resolves to. Move this
+# pointer to ship a new version; change it back to roll back.
+latest: v2
+
+# The model this prompt targets. Classification is cheap, high-volume work, so it
+# defaults to the cheap tier — the gateway router would pick the same.
+model: claude-haiku-4-5
+
+# Sampling / generation parameters.
+#
+# NOTE for Claude Opus 4.8 / 4.7 (and Fable 5): temperature, top_p, and top_k are
+# NOT accepted — sending them returns a 400. Steer behavior through the prompt
+# text and the `effort` level instead. Thinking is adaptive-only.
+params:
+  max_tokens: 512
+  thinking:
+    type: adaptive
+  effort: low
