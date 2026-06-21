@@ -83,6 +83,52 @@ _ORDER_ID_RE = re.compile(r"\bord_[0-9a-z]+\b", re.IGNORECASE)
 _MONEY_RE = re.compile(r"\$\s*(\d+(?:\.\d{1,2})?)")
 _PLAN_RE = re.compile(r"\b(starter|pro|enterprise)\b", re.IGNORECASE)
 
+# Imperative verbs that signal a *request to act on the account* ("please reset", "issue a
+# refund of", "change my plan to") rather than an informational question ("how do I reset…").
+# This is the line between deflect and act: an informational question is grounded from the help
+# center; only an actionable request reaches a scoped tool.
+_ACTION_VERBS = (
+    "please reset", "reset the password", "reset my password", "reset password",
+    "issue a refund", "issue refund", "refund $", "refund the", "give me a refund",
+    "process a refund", "send a refund",
+    "upgrade cus", "downgrade cus", "change cus", "switch cus", "move cus",
+    "upgrade me to", "downgrade me to", "change my plan to", "switch me to",
+    "where is my order", "track order", "status of order", "check order",
+)
+
+
+# Informational framing — a *question about how to*, not a *request to do*. "How do I reset my
+# password?" is a deflection; "reset the password for cus_002" is an action. When both an
+# informational frame and an action verb are present, a concrete slot (an id/amount) breaks the
+# tie toward acting; otherwise we deflect (the safe default: answer, don't touch the account).
+_INFORMATIONAL_FRAMES = (
+    "how do i", "how can i", "how to", "what is", "what's", "what are", "where do i",
+    "can i ", "do you ", "is there", "tell me about", "explain", "?",
+)
+
+
+def _looks_actionable(text: str, slots: dict[str, Any]) -> bool:
+    """Does this ticket *request an account action*, vs. ask an informational question?
+
+    Decision order:
+
+    1. A concrete **slot** (a customer/order id or an explicit ``$`` amount) → actionable. A
+       ticket that names ``cus_002`` or ``ord_1001`` is asking the agent to *do something to that
+       record*, regardless of phrasing.
+    2. Otherwise, if the ticket is framed as an informational **question** ("how do I…?") → not
+       actionable; deflect to a grounded help-center answer even if it contains an action verb.
+    3. Otherwise, an imperative **action verb** ("please reset", "issue a refund") → actionable.
+
+    The safe default is *deflect*: when in doubt, answer the question rather than touch the
+    account. Cheap and explainable for MOCK; a classifier backs the same contract on the live path.
+    """
+    low = text.lower()
+    if any(k in slots for k in ("customer_id", "order_id", "amount_usd")):
+        return True
+    if any(frame in low for frame in _INFORMATIONAL_FRAMES):
+        return False
+    return any(v in low for v in _ACTION_VERBS)
+
 
 @dataclass(frozen=True, slots=True)
 class Intent:
@@ -117,7 +163,12 @@ def classify_intent(text: str) -> Intent:
 
     for name, triggers, tool in _INTENT_RULES:
         if any(t in low for t in triggers):
-            return Intent(name=name, tool=tool, slots=slots)
+            # An action intent only *fires as an action* when the ticket actually asks the agent
+            # to do something (a slot or an imperative). An informational question on the same
+            # topic ("how do I get a refund?") deflects to a grounded help-center answer instead.
+            if _looks_actionable(text, slots):
+                return Intent(name=name, tool=tool, slots=slots)
+            return Intent(name="faq", tool=None, slots=slots)
     return Intent(name="faq", tool=None, slots=slots)
 
 

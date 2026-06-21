@@ -156,8 +156,9 @@ def draft_postmortem(
         "If a mutating verb was repeatedly approved safely, add an eval case before earning autonomy.",
     ]
 
+    cause = triage.suspected_cause.rstrip(".")
     summary = (
-        f"{triage.severity.value} on `{triage.service}`. Suspected cause: {triage.suspected_cause} "
+        f"{triage.severity.value} on `{triage.service}`. Suspected cause: {cause}. "
         f"The copilot correlated read-only signals, retrieved "
         f"{len(triage.runbook_sources)} relevant runbook/incident source(s), and proposed "
         f"{len(triage.proposed_actions)} action(s) ({len(triage.mutating_actions)} mutating, gated)."

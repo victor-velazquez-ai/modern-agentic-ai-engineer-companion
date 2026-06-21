@@ -96,11 +96,12 @@ def _subject_of(question: str) -> str:
     not entity extraction — on the live path the planner model would name the subject directly.
     """
     for m in re.finditer(r"\b([A-Z][\w&.-]*(?:\s+[A-Z][\w&.-]*)*)", question):
-        phrase = m.group(1).strip()
-        first = phrase.split()[0].lower().strip(".")
-        if first in _LEADING_NONSUBJECT:
-            continue
-        return phrase
+        words = m.group(1).strip().split()
+        # Strip leading question/auxiliary words from the run (e.g. "Evaluate Acme" → "Acme").
+        while words and words[0].lower().strip(".") in _LEADING_NONSUBJECT:
+            words = words[1:]
+        if words:
+            return " ".join(words)
     return "the target"
 
 

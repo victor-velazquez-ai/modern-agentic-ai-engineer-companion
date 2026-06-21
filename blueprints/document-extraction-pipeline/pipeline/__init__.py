@@ -118,6 +118,7 @@ class ItemResult:
     confidence: ConfidenceReport | None = None
     error: str | None = None
     attempts: int = 0
+    skipped: bool = False  # True when a resumed run short-circuited an already-terminal item
 
     @property
     def accepted(self) -> bool:
@@ -161,7 +162,8 @@ def process_document(
 
     Idempotent at the manifest row level: a resumed backfill skips items already terminal.
     """
-    # Resumability: never redo finished work (Ch 43).
+    # Resumability: never redo finished work (Ch 43). A terminal item short-circuits here — no
+    # extractor call, no model spend — and reports ``skipped=True`` so a caller can prove it.
     if manifest.is_done(doc.doc_id):
         entry = manifest.get(doc.doc_id)
         return ItemResult(
@@ -170,6 +172,7 @@ def process_document(
             error=entry.error,
             confidence=None,
             attempts=entry.attempts,
+            skipped=True,
         )
 
     def _process() -> ItemResult:

@@ -27,14 +27,25 @@ import os
 import sys
 from pathlib import Path
 
-# Make the blueprint importable straight from a clone (before any `pip install -e`). We add both
-# the blueprint root (so ``import app`` / ``import audit`` / ``import tools`` resolve) and the
-# ``app/`` dir (so the pattern-path bootstrap ``import _bootstrap`` inside tools/ resolves too).
-_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(_ROOT))
-sys.path.insert(0, str(_ROOT / "app"))
+# The composed observability console exporter renders the trace tree with a few non-ASCII glyphs
+# (e.g. '·'). On a Windows console defaulting to cp1252 that would raise UnicodeEncodeError, so we
+# switch this process's stdout/stderr to UTF-8. Best-effort: older streams may lack reconfigure().
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):  # pragma: no cover - non-reconfigurable stream
+        pass
 
-from app import (  # noqa: E402  (after sys.path setup)
+# Make this hyphenated blueprint importable straight from a clone (before any `pip install -e`).
+# ``_loader.bootstrap_package`` registers the directory as the package ``incident_response_copilot``
+# so the solution's relative imports (``from ..audit ...``) resolve, and puts the composed pattern
+# blueprints on the path via ``app/_bootstrap.py`` — none of them are forked.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _loader import bootstrap_package  # noqa: E402
+
+bootstrap_package()
+
+from incident_response_copilot.app import (  # noqa: E402  (after the package bootstrap)
     Alert,
     Knowledge,
     auto_approve,
@@ -43,8 +54,8 @@ from app import (  # noqa: E402  (after sys.path setup)
     draft_postmortem,
     review_and_execute,
 )
-from audit.ledger import AuditLedger  # noqa: E402
-from tools.ops_mock import build_ops_client  # noqa: E402
+from incident_response_copilot.audit.ledger import AuditLedger  # noqa: E402
+from incident_response_copilot.tools.ops_mock import build_ops_client  # noqa: E402
 
 from observability_stack import ConsoleExporter, Tracer  # noqa: E402
 
@@ -64,7 +75,8 @@ def _print_triage(triage) -> None:
     print(f"\nTRIAGE  [{triage.alert_id}]  service={triage.service}")
     print(f"  severity        : {triage.severity.value}")
     print(f"  suspected cause : {triage.suspected_cause}")
-    print(f"  runbook sources : {', '.join(triage.runbook_sources) or '(none)'}")
+    sources = list(dict.fromkeys(triage.runbook_sources))  # de-dup, preserve order, for display
+    print(f"  runbook sources : {', '.join(sources) or '(none)'}")
     print("  proposed actions:")
     for a in triage.proposed_actions:
         gate = "MUTATING (gated)" if a.mutating else "non-mutating"

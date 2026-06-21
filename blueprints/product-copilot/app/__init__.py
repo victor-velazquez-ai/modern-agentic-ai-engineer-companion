@@ -18,5 +18,26 @@ from __future__ import annotations
 
 from . import _compose  # noqa: F401  (side effect: put pattern blueprints on sys.path)
 
-__all__ = ["_compose"]
+from .copilot_api import Citation, Copilot, CopilotReply, SYSTEM_PROMPT
+from .guardrails import FrontDoor, FrontDoorVerdict, RateLimiter, RateLimitError
+from .session_tools import Account, Order, UserDataStore, build_session_tools
+
+__all__ = [
+    "_compose",
+    # copilot request path
+    "Copilot",
+    "CopilotReply",
+    "Citation",
+    "SYSTEM_PROMPT",
+    # front door
+    "FrontDoor",
+    "FrontDoorVerdict",
+    "RateLimiter",
+    "RateLimitError",
+    # session-scoped tools + data
+    "UserDataStore",
+    "Order",
+    "Account",
+    "build_session_tools",
+]
 __version__ = "0.1.0"

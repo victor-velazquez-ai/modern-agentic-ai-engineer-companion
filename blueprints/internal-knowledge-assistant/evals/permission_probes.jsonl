@@ -3,11 +3,15 @@
 #
 # Schema (eval_harness.Case): {"id","input","expected","tags",["notes"]}
 #   input    : {"question": "...", "user": "<caller id>"}  — asked AS that identity
-#   expected : the substring(s) a correct answer must contain. For permission probes the
-#              contract is the OPPOSITE: the answer must NOT leak the restricted term, and the
-#              grader (evals/run_evals.py) checks for its ABSENCE.
-#   tags     : the first tag selects behavior. "permission-probe" => must-return-nothing /
-#              must-not-leak; "answerable" => normal grounded Q->A.
+#   expected : for "answerable" cases, a substring the grounded answer must contain. For
+#              "permission-probe"/"authorized" cases it is the restricted secret codename
+#              (PHOENIXLEDGER), used as a secondary leak check; the PRIMARY check is provenance.
+#   tags     : the tag selects grader behavior (see evals/run_evals.py):
+#              "permission-probe" => the restricted doc must be ABSENT from the citations AND the
+#                                    secret absent from the text (must-return-nothing breach test);
+#              "authorized"       => the restricted doc must BE cited (access control, not blanket
+#                                    suppression);
+#              "answerable"       => normal grounded Q->A; the expected substring must be present.
 #
 # ---- PERMISSION PROBES: the breach test. As an unprivileged identity (alice), a query that
 #      lexically targets the RESTRICTED comp sheet must return nothing and must never surface
@@ -22,7 +26,7 @@
 
 {"id": "ans-pto-carryover-alice", "input": {"question": "how many PTO days can I carry over to next year?", "user": "alice"}, "expected": "5 days", "tags": ["answerable"], "notes": "From pto-policy.md (everyone)."}
 {"id": "ans-expense-window-alice", "input": {"question": "how long do I have to submit an expense?", "user": "alice"}, "expected": "30 days", "tags": ["answerable"], "notes": "From expense-reimbursement.md (everyone)."}
-{"id": "ans-home-office-alice", "input": {"question": "is there a home office stipend for remote employees?", "user": "alice"}, "expected": "500", "tags": ["answerable"], "notes": "From remote-work.md (everyone)."}
+{"id": "ans-home-office-alice", "input": {"question": "is there a home office stipend for remote employees?", "user": "alice"}, "expected": "stipend", "tags": ["answerable"], "notes": "From remote-work.md / onboarding-checklist.md (everyone). Asserts the grounded term the retriever reliably surfaces."}
 {"id": "ans-mfa-alice", "input": {"question": "do I need MFA before accessing internal systems?", "user": "alice"}, "expected": "MFA", "tags": ["answerable"], "notes": "From security-onboarding.md (everyone)."}
 
 # ---- AUTHORIZED ACCESS: the SAME restricted query, asked AS finance leadership (dana), SHOULD

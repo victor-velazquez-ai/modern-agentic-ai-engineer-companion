@@ -52,6 +52,24 @@ _VIOLATION_CUES: dict[str, tuple[str, ...]] = {
     "TXN-03": ("duplicate", "personal expense", "no receipt", "missing receipt", "reimburse"),
 }
 
+# Exoneration cues — phrases that show a violation cue is appearing in a *safe* context, so it
+# must NOT be flagged. This is the precision knob you tune WITH experts: the cost of a false
+# positive is a buried review team, so a screener needs an explicit, auditable way to clear the
+# look-alikes (correct PII handling, risk-balanced return talk) without losing the real hits. When
+# any of a rule's exoneration cues is present, that rule's violation cues are suppressed.
+_EXONERATION_CUES: dict[str, tuple[str, ...]] = {
+    # Correctly *handling* PII (masking) is the policy, not a breach of it.
+    "COMM-01": ("mask all but", "last four", "redact", "do not share"),
+    # Balanced, risk-disclosed return talk is compliant; the cue here is negated.
+    "COMM-02": (
+        "does not guarantee",
+        "no guarantee",
+        "past performance",
+        "not a guarantee",
+        "cannot guarantee",
+    ),
+}
+
 
 @dataclass(frozen=True)
 class Assessment:
@@ -85,16 +103,29 @@ ASSESSMENT_SCHEMA: dict[str, object] = {
 }
 
 
+def _is_exonerated(rule_id: str, text: str) -> bool:
+    """True if a rule's violation cue is appearing in an explicitly *safe* context for ``text``."""
+    return any(safe in text for safe in _EXONERATION_CUES.get(rule_id, ()))
+
+
+def _cue_hits_for(rule_id: str, text: str) -> int:
+    """Violation-cue count for one rule, suppressed to 0 when the rule is exonerated by context."""
+    if _is_exonerated(rule_id, text):
+        return 0
+    return sum(1 for c in _VIOLATION_CUES.get(rule_id, ()) if c in text)
+
+
 def _best_cue_rule(text: str) -> tuple[str, int]:
-    """Return the rule with the most violation cues present in ``text`` (``("", 0)`` if none).
+    """Return the rule with the most (non-exonerated) violation cues in ``text`` (``("", 0)`` none).
 
     Cues are the *evidence* a violation actually occurred. Scanning every rule's cues (not only
     the retrieved rule's) keeps recall up when retrieval surfaces a near-miss rule, while the
-    "at least one cue" bar below keeps precision up on routine items that have no cues at all.
+    exoneration filter + the "at least one cue" bar below keep precision up on routine items and
+    on safe look-alikes (correct PII handling, risk-balanced return talk).
     """
     best_rule, best_hits = "", 0
-    for rid, cues in _VIOLATION_CUES.items():
-        hits = sum(1 for c in cues if c in text)
+    for rid in _VIOLATION_CUES:
+        hits = _cue_hits_for(rid, text)
         if hits > best_hits:
             best_rule, best_hits = rid, hits
     return best_rule, best_hits
@@ -115,8 +146,7 @@ def _heuristic_assessment(item_text: str, match: PolicyMatch) -> Assessment:
     """
     text = item_text.lower()
     retrieved_rule = match.rule_id
-    retrieved_cues = _VIOLATION_CUES.get(retrieved_rule, ())
-    retrieved_hits = sum(1 for c in retrieved_cues if c in text)
+    retrieved_hits = _cue_hits_for(retrieved_rule, text)
 
     # The rule the textual evidence most supports (may differ from the retrieved rule).
     cue_rule, cue_hits = _best_cue_rule(text)

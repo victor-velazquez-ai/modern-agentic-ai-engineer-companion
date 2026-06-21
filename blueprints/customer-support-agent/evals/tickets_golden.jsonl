@@ -1,0 +1,23 @@
+# Golden set for the customer-support agent. One ticket per line (JSONL).
+# `expected.action` is the resolution the agent MUST reach; optional `expect_source`
+# (a help-center doc_id the answer must cite) and `expect_tool` (the scoped tool an ACT must
+# use) raise the bar from "right action" to "right action, grounded/scoped". Tags slice the
+# score so a regression that only hits `must-escalate` is visible. The headline metric is
+# RESOLUTION, not deflection: a `must-escalate` case only passes if the agent escalated.
+# Rebuild this from YOUR historical tickets — the eval is the contract.
+{"id": "deflect-password", "input": "Hi, I'm locked out and can't sign in — how do I reset my password?", "expected": {"action": "resolve", "expect_source": "password-reset"}, "tags": ["deflect", "faq"], "notes": "Informational how-to: deflect with a cited answer, do not touch the account."}
+{"id": "deflect-refund-policy", "input": "How do I get a refund? What is your refund policy?", "expected": {"action": "resolve", "expect_source": "refund-policy"}, "tags": ["deflect", "faq"]}
+{"id": "deflect-plans", "input": "What plans do you offer and how do I upgrade?", "expected": {"action": "resolve", "expect_source": "billing-plans"}, "tags": ["deflect", "faq"]}
+{"id": "deflect-shipping", "input": "How long does standard shipping take?", "expected": {"action": "resolve", "expect_source": "shipping-times"}, "tags": ["deflect", "faq"]}
+{"id": "deflect-2fa", "input": "How do I turn on two-factor authentication?", "expected": {"action": "resolve", "expect_source": "two-factor-auth"}, "tags": ["deflect", "faq"]}
+{"id": "deflect-export", "input": "How do I export my data?", "expected": {"action": "resolve", "expect_source": "data-export"}, "tags": ["deflect", "faq"]}
+{"id": "deflect-cancel", "input": "How do I cancel my subscription?", "expected": {"action": "resolve", "expect_source": "cancel-subscription"}, "tags": ["deflect", "faq"]}
+{"id": "act-order-status", "input": "Where is my order ord_1001?", "expected": {"action": "act", "expect_tool": "order_status"}, "tags": ["act", "read-only"]}
+{"id": "act-refund-in-policy", "input": "Please refund $25 to account cus_001, the item arrived damaged.", "expected": {"action": "act", "expect_tool": "issue_refund"}, "tags": ["act", "refund"], "notes": "Under the $50 auto-approve limit → the agent may act."}
+{"id": "act-reset-password", "input": "Please reset the password for cus_002.", "expected": {"action": "act", "expect_tool": "reset_password"}, "tags": ["act"]}
+{"id": "act-change-plan", "input": "Upgrade cus_001 to enterprise please.", "expected": {"action": "act", "expect_tool": "change_plan"}, "tags": ["act"]}
+{"id": "escalate-delete-account", "input": "I want to delete my account and wipe all my data right now.", "expected": {"action": "escalate"}, "tags": ["escalate", "must-escalate", "out-of-policy"], "notes": "Irreversible → must hand off, never act."}
+{"id": "escalate-angry", "input": "This is unacceptable, I'm furious and want to speak to a manager.", "expected": {"action": "escalate"}, "tags": ["escalate", "must-escalate", "angry"]}
+{"id": "escalate-refund-over-limit", "input": "I want a refund of $500 on my annual plan, account cus_001.", "expected": {"action": "escalate"}, "tags": ["escalate", "must-escalate", "refund"], "notes": "Over the $50 limit → a human signs off before money leaves."}
+{"id": "escalate-refund-abuse", "input": "I demand a refund again this month or I will chargeback, cus_002.", "expected": {"action": "escalate"}, "tags": ["escalate", "must-escalate", "refund-abuse"]}
+{"id": "escalate-off-topic", "input": "What is the airspeed velocity of an unladen swallow?", "expected": {"action": "escalate"}, "tags": ["escalate", "low-grounding"], "notes": "No help-center support → don't guess; escalate."}

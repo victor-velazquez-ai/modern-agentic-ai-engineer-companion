@@ -147,12 +147,14 @@ def build_mock_extractor_model(repaired_source: str | None = None) -> MockModel:
     """
 
     def _decide(transcript: list[Any]) -> Any:
-        # The source to read: the repaired version on a repair turn, else the latest user text.
+        # The source to read: the corrected version on a repair turn, else the document source the
+        # loop carried into the user turn (between the SOURCE markers). A real vision model reads
+        # the attached image; this mock reads the source the same transcript carries.
         if repaired_source is not None:
             source = repaired_source
         else:
             last_user = next((m for m in reversed(transcript) if m.role == "user"), None)
-            source = last_user.text if last_user else ""
+            source = _source_from_task(last_user.text if last_user else "")
         return assistant(
             text="Reading the document and extracting invoice fields.",
             tool_calls=(ToolCall(id="read-1", name="read_document", arguments={"source": source}),),
@@ -172,6 +174,26 @@ def _last_tool_text(transcript: list[Any]) -> str:
         if getattr(msg, "role", None) == "tool":
             return msg.text
     return "{}"
+
+
+# Markers that delimit the raw document source inside the loop's user turn, so the mock can pull
+# it back out. On the live path the document is an attached image, not text in the prompt; this is
+# the offline stand-in for "here is the page to read".
+_SOURCE_OPEN = "<<<DOCUMENT>>>"
+_SOURCE_CLOSE = "<<<END>>>"
+
+
+def _wrap_task(source: str) -> str:
+    """Build the loop's user turn: the schema hint plus the document between source markers."""
+    return f"{_SCHEMA_HINT}\n\n{_SOURCE_OPEN}\n{source}\n{_SOURCE_CLOSE}"
+
+
+def _source_from_task(task: str) -> str:
+    """Pull the document source back out of the user turn the loop carried it in."""
+    if _SOURCE_OPEN in task and _SOURCE_CLOSE in task:
+        inner = task.split(_SOURCE_OPEN, 1)[1].split(_SOURCE_CLOSE, 1)[0]
+        return inner.strip("\n")
+    return task
 
 
 def default_extractor_model() -> ModelPort:
@@ -205,8 +227,13 @@ class ExtractResult:
         return self.outcome.ok
 
 
-def _run_read(model: ModelPort) -> Any:
-    """Run the agent-loop read once and decode its JSON output into a Python object."""
+def _run_read(model: ModelPort, source: str) -> Any:
+    """Run the agent-loop read once over ``source`` and decode its JSON output.
+
+    The document is carried into the loop's user turn (the real seam: the model sees it in the
+    transcript), the loop dispatches the ``read_document`` tool, and the model returns the draft
+    JSON, which we decode here for the validator.
+    """
     loop = AgentLoop(
         model=model,
         tools=ToolRegistry([_read_document]),
@@ -217,7 +244,7 @@ def _run_read(model: ModelPort) -> Any:
         "return ONLY the extracted invoice as a JSON object that fits the schema. Do not invent "
         "fields the document does not contain."
     )
-    result = loop.run(_SCHEMA_HINT, system_prompt=system_prompt)
+    result = loop.run(_wrap_task(source), system_prompt=system_prompt)
     return _decode(result.output)
 
 
@@ -239,7 +266,7 @@ def _decode(text: str) -> Any:
         return text
 
 
-def _make_reextract(repaired_source: str | None) -> Callable[[str], Any]:
+def _make_reextract(source: str, repaired_source: str | None) -> Callable[[str], Any]:
     """Build the ``reextract`` seam :func:`~pipeline.repair.attempt_repairs` calls per repair turn.
 
     Each repair turn re-runs the agent-loop read. In MOCK mode the repaired model re-reads a
@@ -250,7 +277,7 @@ def _make_reextract(repaired_source: str | None) -> Callable[[str], Any]:
 
     def reextract(_prompt: str) -> Any:
         model = build_mock_extractor_model(repaired_source=repaired_source)
-        return _run_read(model)
+        return _run_read(model, source)
 
     return reextract
 
@@ -307,18 +334,18 @@ def extract_document(
 
     if span_cm is not None:
         with span_cm:
-            first_pass = _run_read(model)
+            first_pass = _run_read(model, source)
             outcome = attempt_repairs(
                 first_pass,
-                _make_reextract(repaired_source),
+                _make_reextract(source, repaired_source),
                 max_repairs=max_repairs,
                 on_event=on_event,
             )
     else:
-        first_pass = _run_read(model)
+        first_pass = _run_read(model, source)
         outcome = attempt_repairs(
             first_pass,
-            _make_reextract(repaired_source),
+            _make_reextract(source, repaired_source),
             max_repairs=max_repairs,
             on_event=on_event,
         )

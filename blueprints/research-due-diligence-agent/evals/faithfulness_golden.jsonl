@@ -1,0 +1,14 @@
+# Golden set for the Research & Due-Diligence Agent (composed by evals/run_evals.py).
+# Each row is a COVERAGE case: given a sub-question retrieval query (`input`), the agent's
+# worker must surface the source that actually answers it (`expected` source id appears in the
+# returned citations). The Contains grader from the eval-harness blueprint scores it.
+# Faithfulness (every claim grounded) is scored separately by run_evals.py from a full run.
+# Schema: {"id","input","expected","tags",["notes"]} — see eval-harness/dataset.py.
+{"id": "cov-overview", "input": "Acme Vector DB Inc. company overview product revenue customers headcount", "expected": "internal-001-acme-overview", "tags": ["coverage", "internal"], "notes": "company overview must retrieve the internal overview memo"}
+{"id": "cov-financials", "input": "Acme Vector DB Inc. revenue ARR growth margin burn runway churn retention", "expected": "internal-002-acme-financials", "tags": ["coverage", "internal"], "notes": "unit-economics question must retrieve the finance pack"}
+{"id": "cov-market", "input": "Acme Vector DB Inc. market size growth CAGR demand category", "expected": "web-101-market-size", "tags": ["coverage", "web"], "notes": "market-size question must retrieve the market brief"}
+{"id": "cov-competition", "input": "Acme Vector DB Inc. competitors competitive landscape differentiation moat", "expected": "web-102-competitors", "tags": ["coverage", "web"], "notes": "competition question must retrieve the competitive scan"}
+{"id": "cov-customers", "input": "Acme Vector DB Inc. customer sentiment references satisfaction complaints", "expected": "web-103-customers", "tags": ["coverage", "web"], "notes": "customer question must retrieve the reference-call digest"}
+{"id": "cov-risks", "input": "Acme Vector DB Inc. risk concentration security compliance regulatory", "expected": "web-104-risks", "tags": ["coverage", "web"], "notes": "risk question must retrieve the risk scan (the key diligence item)"}
+{"id": "cov-soc2", "input": "Acme SOC 2 certification FedRAMP data residency compliance", "expected": "web-104-risks", "tags": ["coverage", "web", "specific"], "notes": "a specific compliance fact must retrieve the source that states it"}
+{"id": "cov-concentration", "input": "Acme revenue concentration two financial-services customers renewal", "expected": "web-104-risks", "tags": ["coverage", "specific"], "notes": "concentration risk fact grounded in the risk scan"}

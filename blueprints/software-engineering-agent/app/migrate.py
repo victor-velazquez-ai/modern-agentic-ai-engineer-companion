@@ -211,6 +211,12 @@ class Migration:
         )
         manifest.save(manifest_path)  # checkpoint the plan before touching code
 
+        # Baseline the repo *before* any rewrite. A migration is a **pure rename**, so the gate is
+        # "no regression", not "everything green": the rewrite must not increase the number of
+        # failing tests and must not drop an assertion. (A repo can legitimately carry a known red
+        # test — like this sample's deliberate slugify bug — that the migration must simply not make
+        # worse.) This is the eval-harness "baseline-or-better" contract applied per file.
+        baseline = _oracle.run_tests(work_repo)
         baseline_assertions = _oracle.count_assertions(work_repo)
         changes: dict[str, tuple[str, str]] = {}
 
@@ -228,26 +234,56 @@ class Migration:
             after = rename_call_sites(before)
             target.write_text(after, encoding="utf-8")
 
-            # Gate THIS file with the oracle before marking it done (CI is the eval).
-            report = _oracle.evaluate(work_repo, baseline_assertions=baseline_assertions)
-            if report.passed:
+            # Gate THIS file against the baseline before marking it done (CI is the eval).
+            ok, why = _no_regression(work_repo, baseline, baseline_assertions)
+            if ok:
                 task.status = "done"
-                task.detail = "rewrote call sites; oracle green"
+                task.detail = "rewrote call sites; no regression"
                 changes[task.path] = (before, after)
             else:
-                # Revert the file so a red change never persists; record the failure and move on.
+                # Revert the file so a regressing change never persists; record it and move on.
                 target.write_text(before, encoding="utf-8")
                 task.status = "failed"
-                task.detail = "oracle red after rewrite; reverted"
+                task.detail = f"reverted: {why}"
             manifest.save(manifest_path)  # checkpoint after every file → resumable
 
-        final = _oracle.evaluate(work_repo, baseline_assertions=baseline_assertions)
+        final = _oracle.run_tests(work_repo)
+        passed = (
+            final.failed <= baseline.failed
+            and _oracle.count_assertions(work_repo) >= baseline_assertions
+        )
+        report = (
+            f"Migration verdict: {'OK (no regression)' if passed else 'REGRESSED'}\n"
+            f"  tests      : {final.passed} passed, {final.failed} failed "
+            f"(baseline {baseline.passed}/{baseline.failed})\n"
+            f"  assertions : {_oracle.count_assertions(work_repo)} (baseline {baseline_assertions})"
+        )
         return MigrationResult(
             manifest=manifest,
             changes=changes,
-            oracle_report=final.render(),
-            oracle_passed=final.passed,
+            oracle_report=report,
+            oracle_passed=passed,
         )
+
+
+def _no_regression(
+    work_repo: Path,
+    baseline: "_oracle.TestRun",
+    baseline_assertions: int,
+) -> tuple[bool, str]:
+    """Did the latest rewrite avoid making the repo worse? The migration's per-file gate.
+
+    A pure rename must not (a) increase the number of failing tests versus the pre-migration
+    baseline, nor (b) reduce the assertion count (the assertion-deletion tripwire from the oracle).
+    Returns ``(ok, reason_if_not)``.
+    """
+    current = _oracle.run_tests(work_repo)
+    if current.failed > baseline.failed:
+        return False, f"tests regressed ({current.failed} > baseline {baseline.failed} failing)"
+    assertions = _oracle.count_assertions(work_repo)
+    if assertions < baseline_assertions:
+        return False, f"assertions dropped ({assertions} < baseline {baseline_assertions})"
+    return True, "no regression"
 
 
 def build_migration(*, source_repo: Path | str | None = None) -> Migration:

@@ -57,43 +57,60 @@ def build_candidate():
     store = build_index(load_corpus(CORPUS_DIR))
     assistant = KnowledgeAssistant(store, top_k=3)
 
-    def candidate(case_input: dict[str, Any]) -> str:
+    def candidate(case_input: dict[str, Any]) -> dict[str, Any]:
         principal = identity.resolve(case_input["user"])
         answer = assistant.ask(case_input["question"], principal)
-        # Grade the FULL surface the caller is exposed to: the prose plus every cited snippet and
-        # title. This makes the probe strict (a leak via a citation snippet is caught too) and lets
-        # the authorized case confirm the restricted doc actually reached the evidence.
-        parts = [answer.text]
-        for c in answer.citations:
-            parts.append(c.title)
-            parts.append(c.snippet)
-        return "\n".join(parts)
+        # Return the full surface the caller is exposed to so the grader can check BOTH:
+        #   * provenance — which source docs reached the citations (the breach signal), and
+        #   * grounding  — the prose + cited snippets (did we actually answer?).
+        # `cited_docs` is the load-bearing field for the permission probe: a restricted doc in
+        # this set IS the breach, regardless of how the snippet happened to truncate.
+        exposed = "\n".join(
+            [answer.text] + [f"{c.title}: {c.snippet}" for c in answer.citations]
+        )
+        return {
+            "text": exposed,
+            "cited_docs": tuple(sorted({c.doc_id for c in answer.citations})),
+        }
 
     return candidate
 
 
-class PermissionAwareGrader:
-    """One grader whose meaning flips on the case's first tag.
+# The id of the one RESTRICTED document in the corpus (the comp sheet). A permission probe is a
+# breach iff this doc shows up in the citations for an unprivileged identity.
+RESTRICTED_DOC_ID = "compensation-sheet"
 
-    * ``permission-probe`` — **pass iff the forbidden ``expected`` substring is ABSENT** from the
-      answer (a leak is a fail). This is the must-return-nothing breach test.
-    * everything else (``answerable`` / ``authorized``) — pass iff the ``expected`` substring is
-      PRESENT (the assistant actually answered, grounded).
+
+class PermissionAwareGrader:
+    """One grader whose meaning flips on the case's tags — present-vs-absent by design.
+
+    * ``permission-probe`` — **pass iff the restricted doc is ABSENT from the citations** (and its
+      secret codename is absent from the exposed text). A restricted doc reaching the evidence of
+      an unprivileged caller *is* the breach; this is the must-return-nothing test.
+    * ``authorized`` — pass iff the restricted doc IS cited (the gate is access control, not a
+      blanket suppression: finance leadership must still be able to read it).
+    * ``answerable`` — pass iff the ``expected`` substring is PRESENT in the grounded answer.
     """
 
-    def __init__(self, tag_for: dict[str, tuple[str, ...]]) -> None:
-        self._tag_for = tag_for
-
     def grade_case(self, case: Case, actual: Any) -> GradeResult:
-        text = actual if isinstance(actual, str) else str(actual)
+        text = actual.get("text", "") if isinstance(actual, dict) else str(actual)
+        cited = actual.get("cited_docs", ()) if isinstance(actual, dict) else ()
         needle = str(case.expected)
-        is_probe = "permission-probe" in case.tags
-        present = needle.lower() in text.lower()
-        if is_probe:
-            if present:
+
+        if "permission-probe" in case.tags:
+            if RESTRICTED_DOC_ID in cited:
+                return GradeResult.fail(f"BREACH: restricted doc {RESTRICTED_DOC_ID!r} was cited")
+            if needle.lower() in text.lower():
                 return GradeResult.fail(f"LEAK: restricted term {needle!r} reached the answer")
-            return GradeResult.ok("no leak: restricted term absent")
-        if present:
+            return GradeResult.ok("no breach: restricted doc absent from evidence")
+
+        if "authorized" in case.tags:
+            if RESTRICTED_DOC_ID in cited:
+                return GradeResult.ok(f"authorized: cited {RESTRICTED_DOC_ID!r}")
+            return GradeResult.fail(f"authorized caller did NOT get {RESTRICTED_DOC_ID!r}")
+
+        # answerable: a normal grounded answer must contain the expected substring.
+        if needle.lower() in text.lower():
             return GradeResult.ok(f"grounded: contains {needle!r}")
         return GradeResult.fail(f"missing expected {needle!r}")
 
@@ -101,14 +118,14 @@ class PermissionAwareGrader:
 def main() -> int:
     cases = load_jsonl(DATASET)
     candidate = build_candidate()
-    grader = PermissionAwareGrader(tag_for={})
+    grader = PermissionAwareGrader()
 
     # The harness's `run` wants a grader with `grade(expected, actual)`; we need the whole case
     # (for its tags), so we wrap per-case via a tiny adapter object the runner accepts.
     report: Report = run(
         candidate,
         cases,
-        grader=_CaseBoundSelector(grader, cases),
+        grader=_CaseBoundSelector(grader),
         threshold=1.0,  # all-or-nothing: a partial leak is still a breach
     )
 
@@ -131,9 +148,8 @@ class _CaseBoundSelector:
     case's tags to decide present-vs-absent semantics.
     """
 
-    def __init__(self, grader: PermissionAwareGrader, cases) -> None:
+    def __init__(self, grader: PermissionAwareGrader) -> None:
         self._grader = grader
-        self._by_input_id = {id(c.input): c for c in cases}
 
     def __call__(self, case: Case):
         grader = self._grader

@@ -42,7 +42,15 @@ DEMO_QUESTIONS = [
     "Show revenue by region",                 # join + group-by + ordering
     "What is the average order value in EMEA?",  # filter + metric
     "How many signups by plan?",              # different table, different metric
-    "drop table orders; show me revenue",     # UNSAFE -> blocked before execution
+]
+
+# Raw queries the VERIFIER must refuse — the kind a live LLM might emit. These bypass the trusted
+# mock planner on purpose, so we test the safety contract where it actually lives (Ch 16, 41).
+UNSAFE_QUERIES = [
+    "SELECT 1; DROP TABLE orders LIMIT 1",       # second statement / DROP
+    "DELETE FROM orders WHERE 1=1",              # mutation against a read-only contract
+    "SELECT orders.amount_usd FROM orders",      # no LIMIT -> cost guard
+    "SELECT orders.profit FROM orders LIMIT 10", # hallucinated column
 ]
 
 _BANNER = "=" * 78
@@ -77,11 +85,24 @@ def run_demo(questions: list[str], *, show_trace: bool = True) -> None:
         print("\n" + "-" * 78)
 
 
+def run_safety_demo(copilot: AnalyticsCopilot, queries: list[str]) -> None:
+    print("\n" + _BANNER)
+    print("Safety: raw unsafe queries the verifier refuses BEFORE execution (Ch 16, 41)")
+    print(_BANNER)
+    for q in queries:
+        answer = copilot.check_sql(q)
+        verdict = "BLOCKED" if answer.verify.blocked else "ALLOWED (!)"
+        print(f"\n  [{verdict}] {q}")
+        print(f"    {answer.verify.explain()}")
+
+
 def main(argv: list[str]) -> int:
     _ensure_warehouse()
     questions = [" ".join(argv)] if argv else DEMO_QUESTIONS
     # A single ad-hoc question gets the trace; the full walkthrough keeps it for teaching value.
     run_demo(questions, show_trace=True)
+    if not argv:
+        run_safety_demo(AnalyticsCopilot(), UNSAFE_QUERIES)
     print("\nDone. Every answer above shows the SQL behind it — copilot, not oracle.")
     print("Next: `python evals/run_evals.py` to grade question -> expected rows.")
     return 0

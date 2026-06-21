@@ -28,15 +28,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Importable straight from a clone: blueprint root (for ``app``/``audit``/``tools``) + ``app/``
-# (so the pattern-path bootstrap inside ``tools/`` resolves) + the eval-harness src.
+# Importable straight from a clone: register the hyphenated blueprint dir as the package
+# ``incident_response_copilot`` (so its relative imports resolve) and put the composed pattern
+# blueprints on the path via ``app/_bootstrap.py`` — none of them forked.
 _ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_ROOT))
-sys.path.insert(0, str(_ROOT / "app"))
+from _loader import bootstrap_package  # noqa: E402
 
-from app import Alert, Knowledge, correlate  # noqa: E402
-from audit.ledger import AuditLedger  # noqa: E402
-from tools.ops_mock import build_ops_client  # noqa: E402
+bootstrap_package()
+
+from incident_response_copilot.app import Alert, Knowledge, correlate  # noqa: E402
+from incident_response_copilot.audit.ledger import AuditLedger  # noqa: E402
+from incident_response_copilot.tools.ops_mock import build_ops_client  # noqa: E402
 
 from eval_harness import Case, GradeResult, load_jsonl, run  # noqa: E402
 

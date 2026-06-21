@@ -116,6 +116,14 @@ class Screener:
             # 3) statistical anomaly signal (transactions only) — raises a second reason to look.
             anomaly = self.anomaly_detector.check(amount) if amount is not None else None
 
+            # Ground the flag in the *cited* rule (which may differ from the retrieved one when the
+            # cue evidence points elsewhere), so the basis and the citation always agree.
+            cited_title, cited_basis = match.title, match.snippet
+            if assessment.flagged and assessment.rule_id != match.rule_id:
+                cited = self.policy_index.rule(assessment.rule_id)
+                if cited is not None:
+                    cited_title, cited_basis = cited.title, cited.text
+
             # 4) route: flags become human-review tickets; clears pass through.
             ticket: ReviewTicket | None = None
             routed_to = "none"
@@ -124,8 +132,8 @@ class Screener:
                     item_id=item_id,
                     item_text=text,
                     assessment=assessment,
-                    rule_title=match.title,
-                    basis=match.snippet,
+                    rule_title=cited_title,
+                    basis=cited_basis,
                 )
                 routed_to = "human-review-queue"
 
@@ -134,9 +142,9 @@ class Screener:
                 item_id=item_id,
                 decision=assessment.label,
                 rule_id=assessment.rule_id,
-                rule_title=match.title if assessment.flagged else "",
+                rule_title=cited_title if assessment.flagged else "",
                 confidence=assessment.confidence,
-                basis=(match.snippet if assessment.flagged else assessment.reason),
+                basis=(cited_basis if assessment.flagged else assessment.reason),
                 routed_to=routed_to,
                 anomaly=(anomaly.reason if anomaly else ""),
             )

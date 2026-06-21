@@ -81,10 +81,16 @@ class GroundingSource:
 
     chunk_id: str
     text: str
+    title: str = ""
     score: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
-        return {"chunk_id": self.chunk_id, "text": self.text, "score": round(self.score, 4)}
+        return {
+            "chunk_id": self.chunk_id,
+            "title": self.title,
+            "text": self.text,
+            "score": round(self.score, 4),
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,7 +154,12 @@ def build_messaging_index(playbook_path: Path | None = None) -> HybridRetriever:
         block = block.strip()
         if not block or block.startswith("# "):
             continue  # skip the title / preamble block
-        documents.append(Document(id=f"play-{section_id}", text=block))
+        # The section heading is the first line; carry it as metadata so a retrieved chunk knows
+        # which named play it belongs to (chunking flattens newlines, so we can't recover it later).
+        heading = block.splitlines()[0].strip()
+        documents.append(
+            Document(id=f"play-{section_id}", text=block, metadata={"title": heading})
+        )
         section_id += 1
 
     store = InMemoryVectorStore()

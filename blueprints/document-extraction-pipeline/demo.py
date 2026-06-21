@@ -161,13 +161,12 @@ def main() -> int:
     print("-" * 72)
     before = result.manifest.counts()
     rerun = run_backfill(docs, manifest=result.manifest, review_queue=ReviewQueue())
-    reprocessed = [i for i in rerun.items if i.attempts > 0 and i.status is not ItemStatus.PENDING]
-    # On a resumed run, finished items short-circuit (attempts come from the stored entry == 0 here).
+    skipped = sum(1 for i in rerun.items if i.skipped)
     pending_again = rerun.manifest.counts()["pending"]
     print(
         f"  manifest unchanged: {before == rerun.manifest.counts()}  ·  "
-        f"items still pending after resume: {pending_again}  ·  "
-        f"re-extracted: {len(reprocessed)} (want 0)"
+        f"still pending: {pending_again}  ·  "
+        f"items skipped (already done, zero re-extraction): {skipped}/{len(rerun.items)}"
     )
     print()
 

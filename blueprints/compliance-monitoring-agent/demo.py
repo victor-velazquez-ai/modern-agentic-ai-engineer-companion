@@ -87,8 +87,11 @@ def screen_the_stream() -> tuple[Screener, list]:
         print(f"  {mark} {r.item_id}  {rule:<10} conf={r.assessment.confidence:.2f}")
         print(f"        {r.item_text[:78]}")
         if r.flagged:
-            print(f"        -> cites {r.assessment.rule_id} ({r.match.title})")
-            print(f"        -> basis: {r.match.snippet[:96].strip()}...")
+            cited = screener.policy_index.rule(r.assessment.rule_id)
+            title = cited.title if cited else r.match.title
+            basis = (cited.text if cited else r.match.snippet)
+            print(f"        -> cites {r.assessment.rule_id} ({title})")
+            print(f"        -> basis: {basis[:96].strip()}...")
         if r.anomaly is not None:
             print(f"        -> anomaly: {r.anomaly.reason}")
     return screener, results
@@ -165,6 +168,13 @@ def run_evals() -> None:
 
 
 def main() -> int:
+    # The eval report renders ✓/✗ glyphs; make them printable on cp1252 (Windows) consoles too.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):  # pragma: no cover - non-reconfigurable stream
+            pass
+
     mode = "MOCK (offline, deterministic, $0)" if mock_mode() else "LIVE"
     print("Modern Agentic AI Engineer — compliance-monitoring-agent (SOLUTION blueprint)")
     print(f"Composes: rag-pipeline · agent-loop · eval-harness · observability-stack | mode: {mode}")

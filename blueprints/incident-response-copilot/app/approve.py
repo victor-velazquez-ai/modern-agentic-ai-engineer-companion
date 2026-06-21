@@ -100,7 +100,7 @@ class GateReport:
             return "No mutating actions were proposed — nothing required approval."
         lines = ["Approval gate:"]
         for o in self.outcomes:
-            mark = {"executed": "✓", "approved": "✓", "rejected": "✗", "failed": "!"}[o.status]
+            mark = {"executed": "[x]", "approved": "[x]", "rejected": "[ ]", "failed": "[!]"}[o.status]
             lines.append(f"  {mark} [{o.status}] {o.action.description}")
             if o.error:
                 lines.append(f"      error: {o.error}")

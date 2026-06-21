@@ -140,6 +140,14 @@ class PolicyIndex:
         """Parse the corpus file and build the index in one call."""
         return cls(parse_policies(path))
 
+    def rule(self, rule_id: str) -> PolicyRule | None:
+        """Look up a parsed rule by id — used to ground a flag's *cited* rule (its title + text).
+
+        The classifier may cite a rule the retriever did not rank first (the cue evidence points
+        elsewhere), so the audit basis must come from the *cited* rule, not the retrieved one.
+        """
+        return self.rules.get(rule_id)
+
     def most_relevant_rule(self, query: str, *, k: int = 4) -> PolicyMatch:
         """Retrieve + rerank the policy corpus and return the single best-matching rule.
 
