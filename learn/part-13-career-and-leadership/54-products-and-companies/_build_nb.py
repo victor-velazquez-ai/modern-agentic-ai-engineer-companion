@@ -9,13 +9,23 @@ import pathlib
 NB = "54-01-24-month-roadmap-worksheet.ipynb"
 
 
+_ID = [0]
+
+
+def _next_id():
+    _ID[0] += 1
+    return f"cell{_ID[0]:02d}"
+
+
 def md(*lines):
-    return {"cell_type": "markdown", "metadata": {}, "source": list(lines)}
+    return {"cell_type": "markdown", "id": _next_id(), "metadata": {},
+            "source": list(lines)}
 
 
 def code(*lines):
     return {
         "cell_type": "code",
+        "id": _next_id(),
         "execution_count": None,
         "metadata": {},
         "outputs": [],
@@ -84,7 +94,6 @@ cells.append(C(
 """import json
 import os
 from datetime import date
-from dateutil.relativedelta import relativedelta  # from python-dateutil (a dotenv dep)
 
 from dotenv import load_dotenv
 
@@ -96,21 +105,31 @@ load_dotenv()  # reads a git-ignored .env if present; never hardcode keys
 # required, and there is no MOCK=0 network path in this notebook by design.
 MOCK = os.getenv("COMPANION_MOCK", "1") == "1"
 
-# ✍️ FILL IN your real start month. Calibrate every milestone date to this.
+# ✍️ FILL IN your real start year/month. Calibrate every milestone to this.
 # The chapter is explicit: \"the sequence is the point, not the dates.\"
-START = date(2026, 7, 1)  # ✍️ your month-1, day-1
+START_YEAR, START_MONTH = 2026, 7  # ✍️ your month-1
 VERSION_STAMP = "roadmap is a living commitment — revisit quarterly; re-date, don't abandon"
+
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _add_months(offset):
+    # pure-stdlib month math: month 1 == START, so offset is 1-based.
+    total = (START_YEAR * 12 + (START_MONTH - 1)) + (offset - 1)
+    return total // 12, total % 12  # (year, 0-based month index)
 
 
 def window(start_month, end_month):
     \"\"\"Human label for a phase, e.g. 'Jul 2026 – Sep 2026'.\"\"\"
-    a = START + relativedelta(months=start_month - 1)
-    b = START + relativedelta(months=end_month - 1)
-    return f"{a:%b %Y} – {b:%b %Y}"
+    ay, am = _add_months(start_month)
+    by, bm = _add_months(end_month)
+    return f"{_MONTHS[am]} {ay} – {_MONTHS[bm]} {by}"
 
 
 print("MOCK =", MOCK, "| fully offline — this worksheet never calls a network")
-print("Start:", f"{START:%b %Y}", "— every phase below is dated relative to this.")"""
+print("Start:", f"{_MONTHS[START_MONTH - 1]} {START_YEAR}",
+      "— every phase below is dated relative to this.")"""
 ))
 
 # 5. Body ------------------------------------------------------------------
@@ -154,7 +173,7 @@ for L in liabilities:
 cells.append(M(
 """## Part 2 — The 24-month roadmap (the worksheet's spine, §54.4)
 
-Here is the concrete plan. **Calibrate the timeline to your start (`START` above) — the sequence is the point, not the dates.** Four phases:
+Here is the concrete plan. **Calibrate the timeline to your start (`START_YEAR`/`START_MONTH` above) — the sequence is the point, not the dates.** Four phases:
 
 - **Months 1–3 — consolidate.** Finish the capstone to *operated*, not demoed: real users (even three), real traces, real cost dashboard, ADRs written. This single artifact powers everything after.
 - **Months 4–9 — become visibly senior.** Claim one piece of next-level scope *in writing* with your manager (Ch 50). Ship one substantive public artifact per month in one niche (Ch 53). Build the eval-first reputation: be the person who shows numbers.
@@ -227,7 +246,8 @@ def where_to_spend_iterations(text):
 
 print("Your stated uncertainty:")
 print(" ", biggest_uncertainty)
-print("\nWhere to spend iterations:")
+print()
+print("Where to spend iterations:")
 print(" ", where_to_spend_iterations(biggest_uncertainty))"""
 ))
 
@@ -406,14 +426,14 @@ cells.append(M(
 cells.append(M(
 """## Exercises
 
-1. **Date the whole spine.** Set `START` to your real start month, fill one *measurable* `commitment` per phase, and re-run. \U0001F52E Predict which phase you're most likely to let slip — then write the one guardrail that protects it.
+1. **Date the whole spine.** Set `START_YEAR`/`START_MONTH` to your real start month, fill one *measurable* `commitment` per phase, and re-run. \U0001F52E Predict which phase you're most likely to let slip — then write the one guardrail that protects it.
 2. **Run the validation gate.** If Path B tempts you, fill in `validation` honestly and find your `validation_status` next-step. Design the **cheapest 2-week experiment** that reduces your `biggest_uncertainty`, and write it down.
 3. **Audit the moat, then the math.** Score `moats` 0–5 each and fill in `unit`. For your *weakest* moat, write the smallest move that raises it one point; for the economics, find the one lever (routing, caching, or price) that most improves `gross_margin`.
 4. **Self-audit against the §54 checklist (next cell).** Mark each box truthfully and write the single next action for every `False`."""
 ))
 
 cells.append(C(
-"""# Exercise 1 — re-date the roadmap (set START), fill commitments, re-run Part 2."""
+"""# Exercise 1 — re-date the roadmap (set START_YEAR/START_MONTH), fill commitments, re-run Part 2."""
 ))
 cells.append(C(
 """# Exercise 2 — fill `validation`; write the cheapest 2-week experiment for your uncertainty."""
@@ -449,7 +469,7 @@ The payoff: this cell echoes everything you filled in as one compact, **dated, v
 
 cells.append(C(
 """committed_plan = {
-    "start": str(START),
+    "start": f"{_MONTHS[START_MONTH - 1]} {START_YEAR}",
     "version_stamp": VERSION_STAMP,
     "liabilities_owned": [
         {"habit": L["habit"], "your_tell": L["your_tell"]}
@@ -466,7 +486,8 @@ cells.append(C(
     "unit_economics": gross_margin(unit),
 }
 print(json.dumps(committed_plan, indent=2))
-print("\n# ⚠️", VERSION_STAMP)"""
+print()
+print("# ⚠️", VERSION_STAMP)"""
 ))
 
 # 9. Next ------------------------------------------------------------------
