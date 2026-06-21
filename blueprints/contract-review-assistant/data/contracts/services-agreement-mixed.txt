@@ -1,0 +1,35 @@
+PROFESSIONAL SERVICES AGREEMENT
+
+This Professional Services Agreement ("Agreement") is between Provider and Buyer. Most terms track
+Buyer's standard playbook; a small number deviate and warrant review.
+
+1. Limitation of Liability
+Each party's total aggregate liability shall not exceed the fees paid in the twelve (12) months
+preceding the claim. Indirect and consequential damages are excluded.
+
+2. Termination
+Either party may terminate for convenience on 30 days' written notice, and for cause with a cure
+period.
+
+3. Confidentiality
+Each party will protect the other's Confidential Information for three (3) years following
+termination, with standard carve-outs.
+
+4. Payment Terms
+Buyer shall pay undisputed invoices Net 60 from the date of a valid invoice. This extended window is
+longer than Buyer's standard Net 30 position.
+
+5. Governing Law
+This Agreement is governed by the laws of [Your State], venue in [Your County].
+
+6. Warranty
+Provider warrants the services will conform to the documentation for 90 days; the remedy is
+re-performance.
+
+7. IP Ownership
+Each party retains its pre-existing intellectual property. Deliverable IP assigns to Buyer on full
+payment.
+
+8. Data Protection
+A DPA governs personal data. Sub-processors require notice and breach notification is within 72
+hours.

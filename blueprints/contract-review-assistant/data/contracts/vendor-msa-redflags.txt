@@ -1,0 +1,41 @@
+VENDOR MASTER SERVICES AGREEMENT
+
+This Master Services Agreement ("Agreement") is made between Supplier and Client. Client should
+review the following terms carefully; several depart from Client's standard positions.
+
+1. Limitation of Liability
+Client agrees to unlimited liability for any and all damages arising under this Agreement. Supplier's
+liability is capped at $100. This uncapped exposure applies without limitation of any kind.
+
+2. Indemnification
+Client shall, at its sole expense, defend, indemnify, and hold harmless Supplier against any and all
+claims. This indemnity is one-way and uncapped; Supplier owes Client no reciprocal indemnity.
+
+3. Termination
+Supplier may terminate this Agreement immediately and without notice at its sole discretion. This
+Agreement will automatically renew for successive 12-month terms unless Supplier elects otherwise.
+
+4. Confidentiality
+Client's confidentiality obligations survive in perpetuity and continue indefinitely after
+termination, with no carve-outs for information that becomes publicly known.
+
+5. Payment Terms
+Client shall prepay all fees in advance of delivery. Any remaining balance is due Net 60 from the
+invoice date. No late-payment remedy is available to Client.
+
+6. Governing Law
+This Agreement is governed by the laws of England and Wales, and any dispute shall be resolved by
+arbitration in a foreign jurisdiction selected by Supplier.
+
+7. Warranty
+The services are provided "AS IS" and "AS-IS" with no warranty of any kind. Supplier disclaims all
+warranties, including any warranty of fitness for a particular purpose.
+
+8. IP Ownership
+Client assigns all intellectual property to Supplier, including pre-existing and background IP, and
+such ownership transfers immediately and before any payment is made.
+
+9. Data Protection
+Supplier processes personal data without a DPA. Supplier may engage any sub-processor at will and
+transfer data outside the approved regions. Supplier will notify Client of a breach within 30 days
+of becoming aware.

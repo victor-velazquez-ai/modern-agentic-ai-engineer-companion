@@ -1,0 +1,7 @@
+{
+  "id": "launch-blog",
+  "topic": "How PulseBoard cuts weekly reporting time for operations teams",
+  "channels": ["blog", "email", "social"],
+  "audience": "operations leaders evaluating analytics tools",
+  "keywords": ["reporting time", "prebuilt metric templates", "data warehouse"]
+}

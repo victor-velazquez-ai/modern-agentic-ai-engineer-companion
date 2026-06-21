@@ -53,7 +53,18 @@ from rag_pipeline import (  # noqa: E402
 )
 from rag_pipeline.embed import get_embedder  # noqa: E402
 
+from agent_loop import (  # noqa: E402
+    AgentLoop,
+    MockModel,
+    Tool,
+    ToolCall,
+    ToolRegistry,
+    ToolSpec,
+    assistant,
+)
+
 from app.identity import Principal  # noqa: E402
+from app.ticket_tool import build_ticket_client, file_ticket_callable  # noqa: E402
 from ingest.sync_acl import doc_acl  # noqa: E402
 
 
