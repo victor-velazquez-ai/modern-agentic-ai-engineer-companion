@@ -19,20 +19,25 @@ free and deterministic in MOCK mode.
 
 from __future__ import annotations
 
-# Wire the sibling pattern blueprints onto the path before importing them.
-from app import _paths  # noqa: F401
-
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from eval_harness import GradeResult, Report, gate, load_jsonl, run
-
-from app.decision import Decision
-from app.support_agent import SupportAgent
-
+# Put this solution's root on the path so ``app`` / ``data`` / ``tools`` import as packages,
+# whether this file is imported (from ``demo.py``) or run directly (``python evals/run_eval.py``).
 _HERE = Path(__file__).resolve().parent
+if str(_HERE.parent) not in sys.path:
+    sys.path.insert(0, str(_HERE.parent))
+
+# Wire the sibling pattern blueprints onto the path before importing them.
+from app import _paths  # noqa: E402,F401
+
+from eval_harness import GradeResult, Report, gate, load_jsonl, run  # noqa: E402
+
+from app.decision import Decision  # noqa: E402
+from app.support_agent import SupportAgent  # noqa: E402
+
 GOLDEN_PATH = _HERE / "tickets_golden.jsonl"
 BASELINE_PATH = _HERE / "baseline.json"
 
@@ -107,8 +112,18 @@ def evaluate(agent: SupportAgent) -> Report:
     return run(_candidate(agent), cases, ResolutionGrader(), threshold=PASS_THRESHOLD)
 
 
+def _force_utf8_console() -> None:
+    """Make the ✓/✗ glyphs in the gate report print on any console (incl. Windows cp1252)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):  # pragma: no cover - non-reconfigurable stream
+            pass
+
+
 def main(*, agent: SupportAgent | None = None) -> int:
     """Score + gate. Returns ``0`` on pass, ``1`` on regression (CI-usable exit code)."""
+    _force_utf8_console()
     if agent is None:
         # Build the same composed agent the demo uses.
         from data import load_help_center
@@ -143,5 +158,4 @@ if __name__ == "__main__":
     import os
 
     os.environ.setdefault("COMPANION_MOCK", "1")
-    sys.path.insert(0, str(_HERE.parent))  # allow running this file directly
     raise SystemExit(main())

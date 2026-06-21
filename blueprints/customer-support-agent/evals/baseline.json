@@ -1,0 +1,20 @@
+{
+  "mean_score": 1.0,
+  "pass_rate": 1.0,
+  "passed": 16,
+  "tag_scores": {
+    "act": 1.0,
+    "angry": 1.0,
+    "deflect": 1.0,
+    "escalate": 1.0,
+    "faq": 1.0,
+    "low-grounding": 1.0,
+    "must-escalate": 1.0,
+    "out-of-policy": 1.0,
+    "read-only": 1.0,
+    "refund": 1.0,
+    "refund-abuse": 1.0
+  },
+  "threshold": 0.5,
+  "total": 16
+}

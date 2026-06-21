@@ -28,6 +28,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+# The eval-harness report renders failures with a non-ASCII glyph ('✗'); switch this process's
+# stdout/stderr to UTF-8 so it prints on a cp1252 Windows console. Best-effort.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):  # pragma: no cover - non-reconfigurable stream
+        pass
+
 # Importable straight from a clone: register the hyphenated blueprint dir as the package
 # ``incident_response_copilot`` (so its relative imports resolve) and put the composed pattern
 # blueprints on the path via ``app/_bootstrap.py`` — none of them forked.

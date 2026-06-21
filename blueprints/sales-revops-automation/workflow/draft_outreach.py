@@ -173,7 +173,15 @@ def retrieve_grounding(
     """Hybrid-retrieve the top playbook snippets for ``query`` and rerank them (rag-pipeline)."""
     hits = retriever.retrieve(query, k=max(k * 2, 4))
     reranked = MockReranker().rerank(query, hits, top_n=k)
-    return [GroundingSource(chunk_id=s.chunk.id, text=s.chunk.text, score=s.score) for s in reranked]
+    return [
+        GroundingSource(
+            chunk_id=s.chunk.id,
+            text=s.chunk.text,
+            title=str(s.chunk.metadata.get("title", "")),
+            score=s.score,
+        )
+        for s in reranked
+    ]
 
 
 # --- the wrong-recipient guardrail (Ch 22/41) --------------------------------------------------
@@ -250,14 +258,14 @@ def _drafting_model(account: Mapping[str, Any], sources: list[GroundingSource]) 
     contact_name = str(contact.get("name", "there")).split()[0] if contact.get("name") else "there"
     next_step = str(account.get("next_step") or "the agreed next step")
     close_date = account.get("close_date")
-    top_play = sources[0].text if sources else ""
-    # Pull the play's heading (its first line) so the draft references the named play, not raw text.
-    play_title = top_play.splitlines()[0].strip() if top_play else "our last conversation"
+    # The named play behind the draft (its heading, carried as chunk metadata) — the audit trail to
+    # *which* winning message we reused, without dumping the whole snippet into the subject line.
+    play_title = (sources[0].title if sources and sources[0].title else "your evaluation").strip()
 
     timeline = f" To keep us on track for {close_date}, " if close_date else " "
     body = (
         f"Hi {contact_name},\n\n"
-        f"Thanks for the time on our last call. Following up on {next_step.lower()} — "
+        f"Thanks for the time on our last call. Following up on {next_step.lower()} - "
         f"this is the path that has worked best for accounts like yours "
         f"({play_title.lower()}).{timeline}"
         f"I'll get that over to you and keep things moving. Let me know if anything's missing.\n\n"

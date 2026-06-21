@@ -145,15 +145,22 @@ class _CopilotModel:
         gateway: Gateway,
         *,
         evidence: str,
+        top_evidence: str,
         tool_names: set[str],
         label: str,
         system: str = SYSTEM_PROMPT,
     ) -> None:
         self._gateway = gateway
         self._evidence = evidence
+        self._top_evidence = top_evidence
         self._tool_names = tool_names
         self._label = label
         self._system = system
+        # MOCK mode (repo default): the gateway's MockProvider returns an opaque canned string,
+        # so for a *grounded* answer we surface the retrieved evidence extractively while STILL
+        # routing the call through the gateway (real cache / cost / routing / metering). Live
+        # mode returns the model's own generated text.
+        self._mock = os.getenv("COMPANION_MOCK", "1") != "0"
         self.last_result: Any = None  # the GatewayResult of the final generation
         self._tool_dispatched = False
 
@@ -215,8 +222,12 @@ class _CopilotModel:
         )
         self.last_result = result
         usage = result.response.usage
+        # In MOCK mode the answer is grounded extractively in the top scoped chunk (deterministic,
+        # checkable, and never able to contain another tenant's evidence because retrieval was
+        # tenant-isolated). In live mode we return the model's own grounded generation.
+        text = self._grounded_answer() if self._mock else result.response.text
         return ModelResponse(
-            assistant(text=result.response.text),
+            assistant(text=text),
             usage={"input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens},
         )
 
@@ -227,6 +238,22 @@ class _CopilotModel:
                 f"{self._evidence}\n\nQuestion: {user_text}"
             )
         return user_text
+
+    def _grounded_answer(self) -> str:
+        """A deterministic, extractive answer from the top scoped chunk (MOCK mode).
+
+        Returns the highest-ranked retrieved chunk's text — the evidence the answer is grounded
+        in — so the MOCK demo is reproducible and the eval can check the answer contains the
+        expected fact. Because retrieval was scoped to one tenant's index, this text can only ever
+        come from that tenant's (or shared) docs; cross-tenant content is impossible by
+        construction, which is what the isolation eval asserts.
+        """
+        if not self._top_evidence:
+            return (
+                "I couldn't find anything about that in your product documentation. "
+                "Try rephrasing, or contact support."
+            )
+        return self._top_evidence
 
 
 @dataclass
@@ -275,13 +302,14 @@ class Copilot:
             # 2) Scoped retrieval: evidence from ONLY this tenant's index.
             with tracer.retrieval_span(query=safe_message, k=self.retrieval_k):
                 hits = self.stores.retrieve(session, safe_message, k=self.retrieval_k)
-            evidence, citations = self._format_evidence(hits)
+            evidence, top_evidence, citations = self._format_evidence(hits)
 
             # 3) Agent loop: gateway-backed model + session-scoped tools.
             tools: ToolRegistry = build_session_tools(session, self.user_data)
             model = _CopilotModel(
                 self.gateway,
                 evidence=evidence,
+                top_evidence=top_evidence,
                 tool_names=set(tools.names()),
                 label=session.label,
             )
@@ -306,11 +334,15 @@ class Copilot:
             return
         safe_message = verdict.guard.text
         hits = self.stores.retrieve(session, safe_message, k=self.retrieval_k)
-        evidence, _ = self._format_evidence(hits)
+        evidence, top_evidence, _ = self._format_evidence(hits)
 
         tools = build_session_tools(session, self.user_data)
         model = _CopilotModel(
-            self.gateway, evidence=evidence, tool_names=set(tools.names()), label=session.label
+            self.gateway,
+            evidence=evidence,
+            top_evidence=top_evidence,
+            tool_names=set(tools.names()),
+            label=session.label,
         )
         tool_turn = model._maybe_tool_call(safe_message)
         if tool_turn is not None:
@@ -319,7 +351,15 @@ class Copilot:
             yield reply.text
             return
 
-        # A generated answer: stream the gateway's deltas for real incremental UX.
+        # A generated answer. In MOCK mode the answer is the grounded extractive text (kept
+        # consistent with answer()), chunked word-by-word to mimic token streaming. In live mode
+        # we stream the gateway client's real deltas for true incremental UX.
+        mock = os.getenv("COMPANION_MOCK", "1") != "0"
+        if mock:
+            words = (model._grounded_answer()).split(" ")
+            for i, word in enumerate(words):
+                yield word if i == 0 else " " + word
+            return
         prompt = model._build_prompt(safe_message)
         request = ChatRequest.of(
             self.gateway.default_model, prompt, system=SYSTEM_PROMPT
@@ -327,16 +367,21 @@ class Copilot:
         yield from self.gateway.client.stream_text(request)
 
     # -- helpers -------------------------------------------------------------------------
-    def _format_evidence(self, hits: list[Any]) -> tuple[str, tuple[Citation, ...]]:
-        """Turn retrieval hits into a prompt-ready evidence block + citation tuple."""
+    def _format_evidence(
+        self, hits: list[Any]
+    ) -> tuple[str, str, tuple[Citation, ...]]:
+        """Turn retrieval hits into (evidence block, top-chunk text, citation tuple)."""
         lines: list[str] = []
         citations: list[Citation] = []
-        for h in hits:
+        top_text = ""
+        for i, h in enumerate(hits):
             meta = h.chunk.metadata
             title = str(meta.get("title", h.chunk.doc_id))
             lines.append(f"[{h.chunk.doc_id}] {title}: {h.chunk.text}")
             citations.append(Citation(doc_id=h.chunk.doc_id, title=title, score=h.score))
-        return "\n".join(lines), tuple(citations)
+            if i == 0:
+                top_text = h.chunk.text
+        return "\n".join(lines), top_text, tuple(citations)
 
     def _reply_from(
         self,

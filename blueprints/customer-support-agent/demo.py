@@ -49,8 +49,6 @@ except Exception:  # pragma: no cover
 
 
 # The three canonical tickets — one per branch of the autonomy dial.
-DEMO_TICKETS: tuple[tuple[str, str], str] = ()  # placeholder for type clarity; real list below
-
 _TICKETS = [
     ("deflect", "Hi, I'm locked out and can't sign in — how do I reset my password?"),
     ("act", "Please refund $25 to account cus_001, the item arrived damaged."),
@@ -71,7 +69,17 @@ def build_agent() -> SupportAgent:
     return SupportAgent.from_help_center(docs, tool_caller=tool_caller)
 
 
+def _force_utf8_console() -> None:
+    """Render the ·/— glyphs cleanly on any console (incl. Windows cp1252)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+        except (AttributeError, ValueError):  # pragma: no cover
+            pass
+
+
 def run_tickets(agent: SupportAgent, *, trace: bool = False) -> int:
+    _force_utf8_console()
     mock = os.getenv("COMPANION_MOCK", "1")
     print(f"== customer-support-agent demo (COMPANION_MOCK={mock}, in-process, no network) ==\n")
 
