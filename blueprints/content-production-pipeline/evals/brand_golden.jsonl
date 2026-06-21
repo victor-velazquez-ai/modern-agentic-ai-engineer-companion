@@ -1,0 +1,19 @@
+# Brand-adherence + factual-accuracy golden set for the content pipeline.
+# Schema (eval-harness): {"id", "input", "expected", "tags": [...], "notes"} — one case per line.
+#
+# How it is graded (see demo.py / evals/run_evals.py): the candidate runs a brief through the
+# pipeline and returns the on-brand blog variant. Tags route the grader (run_grouped picks the
+# first matching tag):
+#   factual -> Contains : the output must surface a *grounded* product fact (no fabrication).
+#   brand   -> Contains : the output must carry the on-brand qualifier, not an absolute promise.
+#   voice   -> LLMJudge : open-ended "does this read on-brand?" against a reference (mock judge).
+# Adapt: rewrite `expected` for your product truth, and add a case the day a draft goes off-brand.
+#
+{"id": "fact-reporting-time", "input": "launch-blog", "expected": "reporting time", "tags": ["factual"], "notes": "Must surface the grounded time-savings claim from the corpus."}
+{"id": "fact-no-migration", "input": "launch-blog", "expected": "no data migration", "tags": ["factual"], "notes": "Connects to existing warehouse; must not claim a migration is required."}
+{"id": "fact-soc2", "input": "security-email", "expected": "SOC 2", "tags": ["factual"], "notes": "Security claim must be the grounded certification, not invented."}
+{"id": "fact-encryption", "input": "security-email", "expected": "encrypts", "tags": ["factual"], "notes": "Must mention the grounded encryption fact."}
+{"id": "fact-warehouses", "input": "integrations-social", "expected": "Snowflake", "tags": ["factual"], "notes": "Must name a warehouse PulseBoard actually integrates with today."}
+{"id": "brand-results-vary", "input": "launch-blog", "expected": "results vary", "tags": ["brand"], "notes": "Performance figures must keep the 'results vary' qualifier (no absolute promise)."}
+{"id": "brand-no-databricks", "input": "integrations-social", "expected": "Snowflake, BigQuery, Postgres, and Redshift", "tags": ["brand"], "notes": "Roadmap-only Databricks must NOT be sold as shipping; only the grounded list."}
+{"id": "voice-measured", "input": "security-email", "expected": "PulseBoard is SOC 2 Type II certified and encrypts data in transit and at rest. Results vary by team.", "tags": ["voice"], "notes": "Open-ended: judge that the variant reads measured and grounded, not hype."}

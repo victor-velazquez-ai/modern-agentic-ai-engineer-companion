@@ -1,0 +1,7 @@
+{
+  "id": "integrations-social",
+  "topic": "Which data warehouses PulseBoard connects to today",
+  "channels": ["social", "blog"],
+  "audience": "data engineers and analytics leads",
+  "keywords": ["Snowflake", "BigQuery", "Postgres", "Redshift", "integrations"]
+}

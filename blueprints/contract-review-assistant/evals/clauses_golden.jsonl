@@ -1,0 +1,23 @@
+# Labeled clause golden set for the contract-review-assistant (eval-harness compatible).
+#
+# Schema (same as eval-harness/datasets/example.jsonl): {"id","input","expected","tags","notes"}
+#   input    — {"clause_type": <ClauseType>, "text": <verbatim clause text>}
+#   expected — the RULE-ID a correct review must cite for a deviating clause, or "STANDARD"
+#              for a clause that must NOT be flagged (it already tracks the playbook).
+#   tags     — slice the score: clause type, severity, and "known-bad"/"standard"/"smoke".
+#
+# Co-build this set WITH COUNSEL. Every deviating row asserts the *cited rule*, not just "a flag":
+# an uncited flag is a failure (PLAN.md, Phase-2 definition of done). Two segments matter most —
+# "known-bad" (must be flagged with the right rule) and "standard" (must NOT raise a false flag).
+{"id": "liab-uncapped", "input": {"clause_type": "liability", "text": "Client agrees to unlimited liability for any and all damages, without limitation of any kind."}, "expected": "RULE-LIAB-001", "tags": ["liability", "high", "known-bad", "smoke"], "notes": "Uncapped liability — high-severity; must cite RULE-LIAB-001."}
+{"id": "liab-capped-12mo", "input": {"clause_type": "liability", "text": "Each party's total aggregate liability shall not exceed the fees paid in the twelve (12) months preceding the claim."}, "expected": "STANDARD", "tags": ["liability", "standard", "smoke"], "notes": "Standard 12-month cap — must NOT be flagged."}
+{"id": "indem-one-way", "input": {"clause_type": "indemnification", "text": "Client shall, at its sole expense, defend and indemnify Supplier; this indemnity is one-way and uncapped."}, "expected": "RULE-INDEM-001", "tags": ["indemnification", "high", "known-bad"], "notes": "One-sided uncapped indemnity — high; cite RULE-INDEM-001."}
+{"id": "term-no-notice", "input": {"clause_type": "termination", "text": "Supplier may terminate immediately and without notice at its sole discretion, and the Agreement will automatically renew."}, "expected": "RULE-TERM-001", "tags": ["termination", "medium", "known-bad"], "notes": "Termination without notice + auto-renew — cite RULE-TERM-001."}
+{"id": "term-30-day", "input": {"clause_type": "termination", "text": "Either party may terminate for convenience on 30 days' written notice, and for cause with a cure period."}, "expected": "STANDARD", "tags": ["termination", "standard"], "notes": "Standard 30-day notice — must NOT be flagged."}
+{"id": "conf-perpetual", "input": {"clause_type": "confidentiality", "text": "Confidentiality obligations survive in perpetuity and continue indefinitely after termination."}, "expected": "RULE-CONF-001", "tags": ["confidentiality", "medium", "known-bad"], "notes": "Perpetual confidentiality — cite RULE-CONF-001."}
+{"id": "pay-net60", "input": {"clause_type": "payment_terms", "text": "Client shall prepay all fees in advance of delivery; any balance is due Net 60 from the invoice date."}, "expected": "RULE-PAY-001", "tags": ["payment_terms", "low", "known-bad"], "notes": "Net 60 + payment in advance — cite RULE-PAY-001."}
+{"id": "pay-net30", "input": {"clause_type": "payment_terms", "text": "Buyer shall pay undisputed invoices Net 30 from the date of a valid invoice."}, "expected": "STANDARD", "tags": ["payment_terms", "standard"], "notes": "Standard Net 30 — must NOT be flagged."}
+{"id": "warr-as-is", "input": {"clause_type": "warranty", "text": "The services are provided \"AS IS\" with no warranty; Supplier disclaims all warranties, including fitness for a particular purpose."}, "expected": "RULE-WARR-001", "tags": ["warranty", "medium", "known-bad"], "notes": "AS IS / no warranty — cite RULE-WARR-001."}
+{"id": "ip-assign-all", "input": {"clause_type": "ip_ownership", "text": "Client assigns all intellectual property to Supplier, including pre-existing and background IP, before any payment is made."}, "expected": "RULE-IP-001", "tags": ["ip_ownership", "high", "known-bad"], "notes": "Assignment of all IP incl. pre-existing — high; cite RULE-IP-001."}
+{"id": "data-no-dpa", "input": {"clause_type": "data_protection", "text": "Supplier processes personal data without a DPA and may transfer data outside the approved regions; breach notice within 30 days of becoming aware."}, "expected": "RULE-DATA-001", "tags": ["data_protection", "high", "known-bad"], "notes": "No DPA + slow breach notice — high; cite RULE-DATA-001."}
+{"id": "data-with-dpa", "input": {"clause_type": "data_protection", "text": "A DPA governs personal data; sub-processors require notice and breach notification is within 72 hours."}, "expected": "STANDARD", "tags": ["data_protection", "standard"], "notes": "DPA + 72-hour notice — must NOT be flagged."}

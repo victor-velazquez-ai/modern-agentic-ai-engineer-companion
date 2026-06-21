@@ -271,3 +271,74 @@ class KnowledgeAssistant:
             visible_docs=visible_docs,
             retrieved=len(hits),
         )
+
+    # -- optional light tool use: escalate via the agent-loop ------------------------------
+    def escalate(self, question: str, principal: Principal) -> str:
+        """Run the **agent-loop** to file a ticket when the KB can't answer (Ch 12, 19).
+
+        This is the PLAN's "optional light tool call": the assistant composes the *agent-loop*
+        pattern blueprint (a real :class:`~agent_loop.AgentLoop`, not a fork) and gives it exactly
+        one tool — ``file_ticket`` — reached through the **mcp-server** guards (allow-list, schema
+        validation, timeout). The loop's model is a deterministic :class:`~agent_loop.MockModel`
+        scripted to (1) call the tool, then (2) confirm in plain language, so the whole escalation
+        runs free and offline. On the live path you swap the ``MockModel`` for a gateway-backed
+        port and the agent decides *when* to file; the wiring is identical.
+
+        Returns the agent's final confirmation text (including the new ticket id).
+        """
+        ticket_client = build_ticket_client()
+        guarded_call = file_ticket_callable(ticket_client)  # MCP-guarded {name: callable}
+
+        file_ticket = Tool(
+            spec=ToolSpec(
+                name="file_ticket",
+                description="File a ticket for the user when the knowledge base has no answer.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "body": {"type": "string"},
+                        "requested_by": {"type": "string"},
+                    },
+                    "required": ["title"],
+                },
+            ),
+            fn=guarded_call,  # the agent reaches MCP only through the guarded callable
+        )
+
+        title = f"Knowledge request: {question.strip()[:120]}"
+        # A deterministic two-step script: call the tool, then read its result and confirm.
+        model = MockModel(
+            [
+                assistant(
+                    text="The knowledge base has no answer; filing a ticket.",
+                    tool_calls=(
+                        ToolCall(
+                            id="t1",
+                            name="file_ticket",
+                            arguments={
+                                "title": title,
+                                "body": question.strip(),
+                                "requested_by": principal.user_id,
+                            },
+                        ),
+                    ),
+                ),
+                lambda transcript: assistant(
+                    text=(
+                        "I couldn't find this in anything you can access, so I filed a ticket "
+                        f"for you: {transcript[-1].text}."
+                    )
+                ),
+            ]
+        )
+
+        loop = AgentLoop(model=model, tools=ToolRegistry([file_ticket]), max_turns=4)
+        result = loop.run(
+            question,
+            system_prompt=(
+                "You are an internal knowledge assistant. If the knowledge base cannot answer, "
+                "file a ticket for the employee using the file_ticket tool."
+            ),
+        )
+        return result.output

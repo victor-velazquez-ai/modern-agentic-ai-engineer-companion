@@ -1,0 +1,7 @@
+{
+  "id": "security-email",
+  "topic": "PulseBoard security and data handling for IT buyers",
+  "channels": ["email", "blog"],
+  "audience": "IT and security reviewers",
+  "keywords": ["SOC 2", "encryption", "customer data"]
+}
