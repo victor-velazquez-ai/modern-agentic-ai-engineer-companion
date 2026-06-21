@@ -1,0 +1,10 @@
+{
+  "name": "shop-sandbox-web-tasks",
+  "as_of": "2026-01",
+  "note": "Frozen task-success suite for 47-02. Programmatic end-state checks only (expected_cart). Version-stamped on purpose; treat headline WebArena/OSWorld scores as provisional.",
+  "tasks": [
+    {"id": "add-mouse", "goal": "Add the wireless mouse to the cart", "steps": 4, "expected_cart": ["Wireless Mouse"]},
+    {"id": "search-and-add", "goal": "Search for a mouse, then add it", "steps": 6, "expected_cart": ["Wireless Mouse"]},
+    {"id": "add-from-deep-link", "goal": "Open the product and add it", "steps": 5, "expected_cart": ["Wireless Mouse"]}
+  ]
+}

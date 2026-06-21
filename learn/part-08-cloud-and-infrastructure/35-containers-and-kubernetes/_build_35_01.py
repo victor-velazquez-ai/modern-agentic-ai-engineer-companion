@@ -1,6 +1,7 @@
 """Builder for 35-01-dockerize-a-service.ipynb (temporary; not part of the deliverable)."""
 import json
 import io
+from pathlib import Path
 
 cells = []
 

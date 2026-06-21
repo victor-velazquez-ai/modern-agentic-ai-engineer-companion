@@ -1,0 +1,13 @@
+# Service — a stable virtual address + load-balancing across the Deployment's Pods.
+# Pods come and go (new IPs each time); the Service name stays put.
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+spec:
+  selector:
+    app: agent-service        # routes to every Pod carrying this label
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP

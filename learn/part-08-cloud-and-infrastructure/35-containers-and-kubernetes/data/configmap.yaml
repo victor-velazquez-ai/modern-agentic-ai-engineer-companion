@@ -1,0 +1,10 @@
+# ConfigMap — non-secret configuration, injected into Pods as env vars.
+# Config that can live in git lives here; anything sensitive goes in a Secret instead.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+data:
+  MODEL: claude-opus-4-8
+  LOG_LEVEL: info
+  MAX_CONCURRENCY: "8"

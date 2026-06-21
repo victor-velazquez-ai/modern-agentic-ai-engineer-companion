@@ -1,0 +1,13 @@
+{
+  "url": "https://shop.sandbox.test/search",
+  "note": "Tiny fixture DOM for 47-02. Each node has a stable id and a pixel box [x, y, w, h] for the CURRENT layout. Interactive nodes get a set-of-marks id.",
+  "nodes": [
+    {"id": "banner", "role": "banner", "label": "Sandbox Shop", "interactive": false, "box": [0, 0, 800, 60]},
+    {"id": "q", "role": "textbox", "label": "Search", "interactive": true, "box": [40, 80, 360, 36]},
+    {"id": "go", "role": "button", "label": "Search", "interactive": true, "box": [420, 80, 90, 36]},
+    {"id": "result", "role": "text", "label": "Wireless Mouse $24.00", "interactive": false, "box": [40, 140, 470, 28]},
+    {"id": "add", "role": "button", "label": "Add to cart", "interactive": true, "box": [40, 180, 130, 40]},
+    {"id": "wishlist", "role": "button", "label": "Save for later", "interactive": true, "box": [180, 180, 150, 40]},
+    {"id": "cart", "role": "link", "label": "View cart", "interactive": true, "box": [640, 80, 120, 36]}
+  ]
+}

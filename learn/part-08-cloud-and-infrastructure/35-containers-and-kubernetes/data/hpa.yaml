@@ -1,0 +1,21 @@
+# HorizontalPodAutoscaler — add/remove Pod replicas to track a metric.
+# Here it scales Celery-style workers to queue depth (custom metric), the §35.3 pattern.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agent-workers
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agent-workers
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Pods
+      pods:
+        metric:
+          name: queue_depth          # custom metric: tasks waiting in the broker (Ch 31)
+        target:
+          type: AverageValue
+          averageValue: "30"         # aim for ~30 queued tasks per worker Pod

@@ -1,0 +1,40 @@
+# Deployment — keep N replicas of the agent-service Pod running (declarative desired state).
+# The controller restarts, reschedules, and rolls these Pods so reality matches `replicas`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-service
+  labels:
+    app: agent-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agent-service
+  template:
+    metadata:
+      labels:
+        app: agent-service
+    spec:
+      containers:
+        - name: api
+          image: agent-service:dev        # the image built in 35-01
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: agent-config
+            - secretRef:
+                name: agent-secrets        # ANTHROPIC_API_KEY etc. — injected, never baked in
+          readinessProbe:                  # gates traffic until the app is ready (Ch 28)
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:                   # restarts a stuck Pod (Ch 28)
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10

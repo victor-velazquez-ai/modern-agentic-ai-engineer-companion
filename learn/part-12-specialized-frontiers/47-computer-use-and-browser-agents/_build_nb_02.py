@@ -210,9 +210,11 @@ pixel_hit = hit_test(shifted["nodes"], remembered_pixel)
 # Set-of-marks grounding: the id still names the same element, new box and all.
 som_hit = shifted_marks[remembered_mark]
 
+# Resolve the pixel hit to a label BEFORE the f-string (a ternary can't follow !r).
+pixel_label = repr(pixel_hit["label"]) if pixel_hit else "NOTHING / wrong element"
+
 print("\\nafter a 40px layout shift:")
-print(f"  pixel  ({remembered_pixel}) now hits -> "
-      f"{pixel_hit['label']!r if pixel_hit else 'NOTHING / wrong element'}")
+print(f"  pixel  ({remembered_pixel}) now hits -> {pixel_label}")
 print(f"  mark   [{remembered_mark}]   still resolves -> {som_hit['label']!r} (id={som_hit['id']!r})")'''
 ))
 

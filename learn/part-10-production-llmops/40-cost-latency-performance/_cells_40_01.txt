@@ -1,0 +1,326 @@
+===CELL=== MD
+# Token accounting & attribution: unit economics, not a monthly total
+
+> 📓 *Companion to* **Modern Agentic AI Engineer** *· Ch 40 §40.1 · type: concept-lab*
+
+**The promise:** by the end you can turn a pile of model calls into the numbers finance and product actually ask for — cost per feature, per tenant, and per *completed task* — and find the heavy tail that hides inside the average.
+===CELL=== MD
+## 🧠 Why this matters
+
+The provider bills you one aggregate number per month, but the decisions that *drive* that number — which feature, which prompt, which customer — are buried in your application. The fix is to record usage **at the call site**, with enough labels to answer the questions you'll inevitably be asked.
+
+Think of token spend like any other COGS line: you need **unit economics**, not totals. The unit is the *business action* — a ticket resolved, a document processed — not the API request. Aggregate cost per request hides the agent that loops nine times on one ticket; cost per *completed task* exposes it instantly. Define the unit first, then make every model call carry enough labels to roll up to it. See §40.1.
+===CELL=== MD
+## Objectives & prereqs
+
+**By the end you can:**
+- Capture per-call usage in the book's `CallRecord` shape and price it from a **config table** (never hardcoded in logic).
+- Emit a metric with attribution labels (`feature`, `tenant`, `model`) — the metering layer a cost dashboard reads.
+- Roll a synthetic traffic log up to **cost per feature**, **per tenant**, and **per completed task**.
+- Read the **heavy tail** (p95/p99 cost per task, top-N tenants) that an average hides, and name the caps that defuse it.
+
+**Prereqs:** Ch 39 (the gateway is where metering lives); Ch 23 (metrics emission) read. Notebook `08-01-tokens-and-the-bill` for token intuition.
+
+**Runs free & offline.** Everything here operates on a tiny committed synthetic log (`data/call_log.csv`) plus a **mock** model call. No API key, no network — `MOCK=1` is the only mode this notebook needs, and it is the default.
+===CELL=== CODE
+# Setup — imports, env, and the MOCK switch.
+import os
+import csv
+import json
+import time
+import random
+import statistics
+from dataclasses import dataclass, asdict
+
+from dotenv import load_dotenv
+
+load_dotenv()  # reads a local .env if present; never hardcode keys
+
+# MOCK=1 (default) keeps this notebook offline, free, and deterministic. There is no
+# live path here worth the spend — the lesson is metering, and a mock call carries the
+# same usage shape a real one does. MOCK=0 would simply call the real SDK in tracked_call.
+MOCK = os.getenv("COMPANION_MOCK", "1") == "1"
+
+random.seed(40)  # any stochastic mock is reproducible
+
+DATA = os.path.join(os.getcwd(), "data")
+print("MOCK mode:", MOCK, "— offline, no API key needed" if MOCK else "— LIVE (would call the SDK)")
+print("data dir :", DATA)
+===CELL=== MD
+## Prices live in config, not in logic
+
+The single most important habit in this whole notebook: **prices are configuration.** They change, they differ per model, and a hardcoded number buried in application logic is a bug waiting to happen. Keep a table keyed by model, in *dollars per million tokens*, loaded from config — here, an in-notebook dict standing in for that config.
+===CELL=== CODE
+# Price table: dollars per MILLION tokens, as (input, output, cache_read).
+# In production this is loaded from config (a YAML file, a settings object) — never
+# hardcoded in the call path. Numbers here are illustrative, not a live price sheet.
+PRICES = {
+    "claude-opus-4-8":  (5.00, 25.00, 0.50),   # frontier tier
+    "claude-haiku-4-5": (0.80,  4.00, 0.08),   # cheap tier
+}
+
+
+def price_call(model, input_tokens, output_tokens, cache_read_tokens):
+    """Cost in USD for one call, priced from the config table."""
+    in_p, out_p, cache_p = PRICES[model]
+    # Cache-read tokens are billed at the cheap cached rate, not full input price.
+    billable_input = input_tokens - cache_read_tokens
+    return (billable_input * in_p
+            + cache_read_tokens * cache_p
+            + output_tokens * out_p) / 1_000_000
+
+
+print("priced models:", list(PRICES))
+print("example: opus, 4000 in / 500 out / 2400 cached =",
+      f"${price_call('claude-opus-4-8', 4000, 500, 2400):.5f}")
+===CELL=== MD
+## The book's `tracked_call` and `CallRecord`
+
+This is the metering shape from §40.1, built around a **mock** model call so it runs offline. It captures input/output/cache-read tokens plus latency, prices the call from `PRICES`, and emits a labeled metric. The labels — `feature`, `tenant`, `model` — are the entire point: they are what lets you roll usage up to a business unit later.
+
+In the capstone this lives in **one** place — the gateway (Ch 39) — so every call passes through a single chokepoint. No scattered instrumentation, no blind spots.
+===CELL=== CODE
+@dataclass
+class CallRecord:
+    model: str
+    input_tokens: int
+    output_tokens: int
+    cache_read_tokens: int
+    latency_ms: float
+    cost_usd: float
+    feature: str
+    tenant: str
+    task_id: str
+
+
+# A tiny in-memory metrics sink standing in for Prometheus / an events table (Ch 23).
+METRICS = []
+
+
+def emit_metric(name, value, labels):
+    METRICS.append({"name": name, "value": value, **labels})
+
+
+class _Usage:
+    """Mirrors the provider's usage object shape."""
+
+    def __init__(self, input_tokens, output_tokens, cache_read_input_tokens):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+        self.cache_read_input_tokens = cache_read_input_tokens
+
+
+def _mock_messages_create(**kwargs):
+    """Stand-in for client.messages.create — returns a canned response + usage.
+
+    The usage numbers come from kwargs so a replayed log reproduces exactly; a real
+    response would carry the same .usage shape, which is the whole point of mocking it.
+    """
+    u = kwargs["_usage"]
+    return type("Resp", (), {
+        "usage": _Usage(u["input_tokens"], u["output_tokens"], u["cache_read_tokens"]),
+        "content": [type("Block", (), {"type": "text", "text": "(mock answer)"})()],
+    })()
+
+
+def tracked_call(*, feature, tenant, task_id, model, _usage, **kwargs):
+    """Meter one model call: time it, price it, emit a labeled metric, return the record.
+
+    MOCK=1 uses the canned response above; MOCK=0 would swap in the real client. Either
+    way the metering code is identical — that is what 'meter once at the gateway' buys you.
+    """
+    start = time.monotonic()
+    resp = _mock_messages_create(model=model, _usage=_usage, **kwargs)
+    latency_ms = (time.monotonic() - start) * 1000
+
+    u = resp.usage
+    cost = price_call(model, u.input_tokens, u.output_tokens, u.cache_read_input_tokens or 0)
+
+    record = CallRecord(
+        model=model,
+        input_tokens=u.input_tokens,
+        output_tokens=u.output_tokens,
+        cache_read_tokens=u.cache_read_input_tokens or 0,
+        latency_ms=latency_ms,
+        cost_usd=cost,
+        feature=feature,
+        tenant=tenant,
+        task_id=task_id,
+    )
+    emit_metric("llm_cost_usd", cost,
+                labels={"feature": feature, "tenant": tenant, "model": model})
+    return record
+
+
+# Smoke-test one call.
+rec = tracked_call(feature="support_agent", tenant="acme", task_id="t-demo",
+                   model="claude-opus-4-8",
+                   _usage={"input_tokens": 4000, "output_tokens": 500, "cache_read_tokens": 2400})
+print(json.dumps(asdict(rec), indent=2))
+print("metrics emitted:", len(METRICS))
+===CELL=== MD
+## Replay a small synthetic traffic log
+
+`data/call_log.csv` is a tiny, hand-built log: a `doc_summarizer` and a `faq_bot` on the cheap tier, and a `support_agent` that **loops nine times on one ticket** (`task_id = t-tkt-01`) on the frontier tier — plus one giant 98k-token document that is the heavy tail. We replay each row through `tracked_call`, which produces the same `CallRecord`s a live system would.
+===CELL=== CODE
+def load_log(path):
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            for k in ("input_tokens", "output_tokens", "cache_read_tokens"):
+                row[k] = int(row[k])
+            yield row
+
+
+records = []
+for row in load_log(os.path.join(DATA, "call_log.csv")):
+    records.append(tracked_call(
+        feature=row["feature"], tenant=row["tenant"], task_id=row["task_id"],
+        model=row["model"],
+        _usage={"input_tokens": row["input_tokens"],
+                "output_tokens": row["output_tokens"],
+                "cache_read_tokens": row["cache_read_tokens"]},
+    ))
+
+total = sum(r.cost_usd for r in records)
+print(f"{len(records)} calls replayed, total spend ${total:.4f}")
+print(f"average cost per *request*: ${total / len(records):.5f}")
+===CELL=== MD
+## 🔮 Predict: which feature dominates spend?
+
+Three features generated traffic: `doc_summarizer`, `faq_bot`, and `support_agent`. One of them is going to dominate the bill.
+
+**Predict, before you run the next cell:** which feature accounts for the most spend — and is it because of *price per call*, *number of calls*, or both? Write your guess, then group the records.
+===CELL=== CODE
+def rollup(records, key):
+    """Sum cost by a label, returning a sorted (label, cost, n_calls) list."""
+    agg = {}
+    for r in records:
+        bucket = agg.setdefault(getattr(r, key), [0.0, 0])
+        bucket[0] += r.cost_usd
+        bucket[1] += 1
+    rows = [(k, v[0], v[1]) for k, v in agg.items()]
+    return sorted(rows, key=lambda x: x[1], reverse=True)
+
+
+print("Cost per FEATURE")
+for feature, cost, n in rollup(records, "feature"):
+    print(f"  {feature:16s} ${cost:8.4f}   ({n} calls, ${cost / n:.5f}/call)")
+
+print("\nCost per TENANT")
+for tenant, cost, n in rollup(records, "tenant"):
+    print(f"  {tenant:10s} ${cost:8.4f}   ({n} calls)")
+===CELL=== MD
+**What you just saw.** The `support_agent` dwarfs the others — partly because it's on the frontier tier, but mostly because **one ticket triggered nine model calls**. That's the agentic cost multiplier: a single user action fans out into a dozen calls. And `megacorp` jumps up the tenant list off the back of *one* giant document — a preview of the tail.
+===CELL=== MD
+## Cost per task vs. cost per request — the unit-economics reveal
+
+Cost *per request* makes the looping agent look cheap: each individual call is a few cents. Cost *per completed task* tells the truth — nine calls roll up to one resolved ticket, and that is the number to compare against what a ticket is worth. We have `task_id` on every record, so we can roll up to the unit.
+===CELL=== CODE
+def cost_per_task(records):
+    by_task = {}
+    for r in records:
+        b = by_task.setdefault(r.task_id, [0.0, 0, r.feature])
+        b[0] += r.cost_usd
+        b[1] += 1
+    return by_task
+
+
+tasks = cost_per_task(records)
+agent_tasks = {t: v for t, v in tasks.items() if v[2] == "support_agent"}
+
+print(f"{'task':10s} {'feature':16s} {'calls':>5s} {'cost/task':>11s}")
+for task, (cost, n, feat) in sorted(tasks.items(), key=lambda kv: kv[1][0], reverse=True)[:6]:
+    print(f"{task:10s} {feat:16s} {n:>5d} {cost:>11.5f}")
+
+avg_req = sum(r.cost_usd for r in records) / len(records)
+avg_agent_task = statistics.mean(v[0] for v in agent_tasks.values())
+print(f"\navg cost per REQUEST           : ${avg_req:.5f}")
+print(f"avg cost per resolved TICKET   : ${avg_agent_task:.5f}  "
+      f"({avg_agent_task / avg_req:.1f}x the per-request number)")
+===CELL=== MD
+**What you just saw.** The same workload reads as "fractions of a cent per request" *or* as a multi-cent cost per resolved ticket — and only the second number can be compared to revenue. A nine-call ticket that looks cheap per request is the unit you must price your support tier against.
+===CELL=== MD
+## ⚠️ Pitfall: averages lie — costs are heavy-tailed
+
+The average request cost is a comforting, useless number. A handful of calls — the 98k-token document, the runaway loop — carry most of the bill while the *average* looks fine. Always read the **distribution**: p95/p99 cost per task and the top-N tenants. The fix is structural: hard caps (max tokens, max iterations, per-tenant spend) on the tail. **An unbounded loop with a paid API attached is a denial-of-wallet bug** (Ch 41 turns these caps into an abuse control).
+===CELL=== CODE
+def percentile(values, p):
+    """Nearest-rank percentile on a small list — no numpy needed."""
+    s = sorted(values)
+    k = max(0, min(len(s) - 1, round((p / 100) * (len(s) - 1))))
+    return s[k]
+
+
+per_call = sorted((r.cost_usd for r in records), reverse=True)
+print("Per-CALL cost distribution")
+print(f"  mean : ${statistics.mean(per_call):.5f}")
+print(f"  p50  : ${percentile(per_call, 50):.5f}")
+print(f"  p95  : ${percentile(per_call, 95):.5f}")
+print(f"  p99  : ${percentile(per_call, 99):.5f}")
+print(f"  max  : ${per_call[0]:.5f}   <- one call; its share of the whole bill:")
+print(f"         {per_call[0] / sum(per_call) * 100:.0f}% of all spend in a single call")
+
+# A crude ASCII view of the tail so 'heavy-tailed' is something you SEE.
+print("\nTop calls by cost (the tail):")
+for c in per_call[:5]:
+    bar = "#" * int(c / per_call[0] * 40)
+    print(f"  ${c:8.5f} {bar}")
+===CELL=== CODE
+# The caps that defuse the tail. These are config knobs, enforced at the gateway —
+# here we just SHOW what each would have trimmed on this log.
+MAX_TOKENS_PER_CALL = 8000          # refuse / truncate giant inputs
+MAX_ITERATIONS_PER_TASK = 6         # stop a runaway agent loop
+PER_TENANT_DAILY_USD = 0.10         # denial-of-wallet ceiling
+
+capped_input = [r for r in records if r.input_tokens > MAX_TOKENS_PER_CALL]
+loop_lengths = {}
+for r in records:
+    loop_lengths[r.task_id] = loop_lengths.get(r.task_id, 0) + 1
+runaway = {t: n for t, n in loop_lengths.items() if n > MAX_ITERATIONS_PER_TASK}
+
+print(f"calls over {MAX_TOKENS_PER_CALL} input tokens (would be capped): "
+      f"{len(capped_input)}  -> {[r.task_id for r in capped_input]}")
+print(f"tasks over {MAX_ITERATIONS_PER_TASK} iterations (loop cap trips): {runaway}")
+tenant_spend = {t: c for t, c, _ in rollup(records, "tenant")}
+over = {t: c for t, c in tenant_spend.items() if c > PER_TENANT_DAILY_USD}
+print(f"tenants over ${PER_TENANT_DAILY_USD:.2f} (budget alert): "
+      f"{ {t: round(c, 4) for t, c in over.items()} }")
+===CELL=== MD
+**What you just saw.** Three small caps — a per-call token ceiling, a loop limit, and a per-tenant budget — each catch a *different* slice of the tail the average never showed you. None of them touch the well-behaved median traffic. That's the shape of good cost control: bound the tail, leave the body alone.
+===CELL=== MD
+## 🎯 Senior lens
+
+Define the **unit** first — the business action you actually sell — then make every model call carry enough labels (`feature`, `tenant`, `task_id`, `model`) to roll up to it. Meter **once**, at the gateway (Ch 39), not scattered through application code: scattered instrumentation drifts, double-counts, and leaves blind spots exactly where a new feature is bleeding money. And never trust the mean — a cost dashboard that shows only averages is hiding the loop and the whale that are actually your bill. Track p95/p99 cost per task and top-N tenants, alert on them, and cap the tail by construction.
+===CELL=== MD
+## Recap
+
+- Record usage **at the call site** in the `CallRecord` shape; price it from a **config table**, never a hardcoded number in logic.
+- Attribution labels (`feature`, `tenant`, `task_id`, `model`) are the point — they let you roll spend up to a business unit.
+- **Cost per completed task**, not per request, is the unit-economics number; it exposes the agent that loops nine times on one ticket.
+- Costs are **heavy-tailed**: read p95/p99 and top-N tenants, not the mean. One call can be most of the bill.
+- Defuse the tail with **hard caps** (max tokens, max iterations, per-tenant spend) — an unbounded paid loop is a denial-of-wallet bug.
+- Meter **once at the gateway**, the single chokepoint the cost dashboard reads.
+===CELL=== MD
+## Exercises
+
+Each one *changes* something and asks you to predict the result first. (Solutions arrive in `solutions/` in Phase 2.)
+
+1. **A price hike.** Double the output price for `claude-opus-4-8` in `PRICES` and re-run the rollups. Predict whether cost-per-ticket moves more than cost-per-FAQ, then check — and explain the difference from the input/output token mix.
+2. **Add a worse loop.** Append three more rows to a new `t-tkt-04` so it loops twelve times. Predict its rank in the cost-per-task table and whether it trips `MAX_ITERATIONS_PER_TASK`, then verify.
+3. **A real cap.** Write `enforce_caps(row)` that *rejects* a call over `MAX_TOKENS_PER_CALL` before it's made. Re-replay the log through it and predict the new total spend before computing it.
+4. **Tenant budget.** Roll up cost per tenant *per feature* (a two-level group-by) and find which tenant/feature pair to put a budget on first. Predict it from the earlier rollups before you compute.
+===CELL=== CODE
+# Exercise 1 — your code here.
+===CELL=== CODE
+# Exercise 2 — your code here.
+===CELL=== CODE
+# Exercise 3 — your code here.
+===CELL=== CODE
+# Exercise 4 — your code here.
+===CELL=== MD
+## Next
+
+- **Next notebook:** [`40-02-caching-layers-and-cache-aware-routing.ipynb`](40-02-caching-layers-and-cache-aware-routing.ipynb) — the cheapest token is the one you never generate; build all three cache layers and measure their hit rates.
+- **Book:** §40.1 (measuring & attributing cost) and the §40 cost/latency checklist; Ch 23 for the dashboards these metrics feed; Ch 41 for caps as an abuse control.
+- **Blueprint this feeds:** [`blueprints/llm-gateway/`](../../../blueprints/llm-gateway/) (metering at the chokepoint) and [`blueprints/observability-stack/`](../../../blueprints/observability-stack/) (the cost dashboard).
+- **Capstone:** advances [`capstone/llm/gateway.py`](../../../capstone/llm/gateway.py) — the metering and per-tenant budget hooks the platform's Grafana cost dashboard reads (`checkpoints/ch40-cost-and-caching`).
