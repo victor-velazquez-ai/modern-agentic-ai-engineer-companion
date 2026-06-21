@@ -1,0 +1,18 @@
+{
+  "acmerobotics.com": {
+    "domain": "acmerobotics.com",
+    "industry": "Industrial Robotics",
+    "employees": 340,
+    "hq": "Pittsburgh, PA",
+    "funding_stage": "Series B",
+    "source": "mock-enrichment-provider"
+  },
+  "globex.io": {
+    "domain": "globex.io",
+    "industry": "Logistics",
+    "employees": 1200,
+    "hq": "Chicago, IL",
+    "funding_stage": "Series D",
+    "source": "mock-enrichment-provider"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "account_id": "initech-003",
+  "call_id": "call-initech-003-0617",
+  "date": "2026-06-17",
+  "participants": ["Lena Ortiz (Initech, Head of Data)", "Sam (OurCo, AE)"],
+  "transcript": "Sam: Thanks for the time, Lena. What are the must-haves for you to move forward?\nLena: Honestly it comes down to compliance. We're in financial services, so we need SOC2, and we need data to stay in-region - EU data can't leave the EU. Until I have clear answers there, I can't take this to my leadership.\nSam: Understood, that's a common requirement for us. I'll get you the compliance documentation. On timing and budget - any sense of those yet?\nLena: It's early. I don't have a budget number yet and I won't until I've cleared the compliance hurdle. Let's not put a dollar figure on it prematurely.\nSam: Completely fair. So the next step is the compliance packet - SOC2 plus a data-residency statement covering EU in-region storage. I'll send that this week.\nLena: Yes, that's the right next step.\nSam: Done. I'll have it to you by Thursday."
+}

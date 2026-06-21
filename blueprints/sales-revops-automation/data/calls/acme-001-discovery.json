@@ -1,0 +1,7 @@
+{
+  "account_id": "acme-001",
+  "call_id": "call-acme-001-0612",
+  "date": "2026-06-12",
+  "participants": ["Priya Nair (Acme, VP Engineering)", "Dana (OurCo, AE)"],
+  "transcript": "Dana: Thanks for making time, Priya. Last we spoke you were weighing whether to build the agent platform in-house. Where did that land?\nPriya: We talked it over. We're going to buy rather than build for the orchestration layer. The team would rather not own that long term.\nDana: That's great to hear. What's driving the timing?\nPriya: We want something in production before our Q4 robotics launch, so we're targeting a decision by end of August. Budget-wise I'm thinking somewhere around fifty thousand for year one, but I still need to get our VP Finance to sign off.\nDana: Understood. Who else needs to be involved in the evaluation?\nPriya: Our security lead, Tom, will want to do a review. And I'd loop in my VP Finance, Anita, for the commercial side.\nDana: Perfect. As a next step I'll put together a tailored technical evaluation plan and send it over this week. Does that work?\nPriya: Yes, send that over and I'll get Tom scheduled.\nDana: Will do. I'll follow up by Friday."
+}

@@ -1,0 +1,7 @@
+{
+  "account_id": "globex-002",
+  "call_id": "call-globex-002-0615",
+  "date": "2026-06-15",
+  "participants": ["Marcus Webb (Globex, Director of Ops)", "Dana (OurCo, AE)"],
+  "transcript": "Dana: Hi Marcus, good to reconnect. How did the proposal land with the team?\nMarcus: Generally positive. The COO is on board with the direction. The sticking point is the security review - our team flagged that they need SOC2 Type II documentation and answers on data residency before we can sign.\nDana: Got it. We can absolutely provide the SOC2 report and a data-residency overview. Anything on pricing?\nMarcus: Pricing is fine at the forty-eight thousand we discussed. No change there. We're not expanding scope.\nDana: Great. So the path forward is the security packet. Next step - I'll send the SOC2 report and the data-residency doc to your security team, and you'll route it for review.\nMarcus: Exactly. If that clears, we're looking at signing before the end of July.\nDana: Perfect, that matches the close date we have. I'll get the security packet over today."
+}

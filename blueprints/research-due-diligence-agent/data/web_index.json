@@ -1,0 +1,29 @@
+{
+  "_comment": "Stubbed OFFLINE 'web search' index for the demo. The web worker treats the 'web' source docs (see data/sources/) as if they were the open web. This file is optional metadata: it records human-readable titles/urls per source id so the stub can present results that LOOK like a search-engine result page, with NO network call. Retrieval itself is done by rag-pipeline over the doc text; this only decorates provenance.",
+  "results": [
+    {
+      "doc_id": "web-101-market-size",
+      "title": "Vector database market size and growth (analyst brief)",
+      "url": "https://example.invalid/research/vector-db-market-2025",
+      "kind": "web"
+    },
+    {
+      "doc_id": "web-102-competitors",
+      "title": "Competitive landscape for vector databases",
+      "url": "https://example.invalid/research/vector-db-competitors-2025",
+      "kind": "web"
+    },
+    {
+      "doc_id": "web-103-customers",
+      "title": "Acme customer sentiment and reference-call digest",
+      "url": "https://example.invalid/research/acme-references-2025",
+      "kind": "web"
+    },
+    {
+      "doc_id": "web-104-risks",
+      "title": "Acme risks, security, and regulatory notes",
+      "url": "https://example.invalid/research/acme-risk-scan-2025",
+      "kind": "web"
+    }
+  ]
+}
