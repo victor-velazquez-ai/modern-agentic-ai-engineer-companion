@@ -1,0 +1,117 @@
+# Semantic layer — the make-or-break asset (PLAN: "invest here, not in the prompt").
+#
+# A text-to-SQL copilot is only as good as the contract between business language and the
+# physical schema. This file *is* that contract: it names the tables, documents every column
+# in plain English (the text the rag-pipeline retrieves over), declares the join grain, and
+# pins each business METRIC to one canonical SQL expression so "revenue" always means the same
+# thing. Point this at your own warehouse and most of the adaptation work is done here.
+#
+# Loaded by app/nl_to_sql.py (schema grounding + metric expansion) and indexed by the
+# rag-pipeline so a question's words map to the *right* tables/joins/metrics.
+
+dialect: sqlite
+
+tables:
+  - name: customers
+    grain: one row per customer
+    description: >
+      The customer dimension. One row per signed-up account, with the region and plan it
+      belongs to. Use this to segment any metric by region or plan.
+    columns:
+      - name: customer_id
+        type: INTEGER
+        description: Primary key. Unique id of the customer / account.
+      - name: name
+        type: TEXT
+        description: Customer display name.
+      - name: region
+        type: TEXT
+        description: >
+          Sales region the customer belongs to. One of 'AMER', 'EMEA', 'APAC'. Use for
+          "by region" / "in EMEA" style questions.
+      - name: plan
+        type: TEXT
+        description: >
+          Subscription plan tier. One of 'free', 'pro', 'enterprise'. Use for "by plan" /
+          "enterprise customers" style questions.
+      - name: signup_date
+        type: TEXT
+        description: ISO date (YYYY-MM-DD) the customer signed up. Use for signups-over-time.
+
+  - name: orders
+    grain: one row per order
+    description: >
+      The order fact table. One row per placed order, linked to a customer. Amounts are in
+      whole US dollars. 'status' distinguishes completed revenue from refunded orders.
+    columns:
+      - name: order_id
+        type: INTEGER
+        description: Primary key. Unique id of the order.
+      - name: customer_id
+        type: INTEGER
+        description: Foreign key to customers.customer_id. Join orders to customers on this.
+      - name: order_date
+        type: TEXT
+        description: ISO date (YYYY-MM-DD) the order was placed. Use for revenue-over-time.
+      - name: amount_usd
+        type: REAL
+        description: Order value in US dollars. Sum this for revenue.
+      - name: status
+        type: TEXT
+        description: >
+          Order lifecycle state. One of 'completed', 'refunded'. Revenue counts ONLY
+          'completed' orders (refunds do not count as revenue).
+
+# Canonical join paths. The copilot must resolve language to the *right* grain; spelling the
+# joins out here (rather than hoping the model guesses) is what keeps numbers correct.
+joins:
+  - name: orders_to_customers
+    description: Attribute each order to its customer's region/plan.
+    sql: orders.customer_id = customers.customer_id
+
+# Business metrics: one canonical SQL expression each. This is the heart of the semantic layer.
+# "revenue" is NOT "SUM(amount_usd)" — it is "SUM(amount_usd) WHERE status='completed'". Pinning
+# that here means every question about revenue is consistent and refund-correct by construction.
+metrics:
+  - name: revenue
+    label: Revenue
+    description: >
+      Total completed order value in USD. Refunded orders are excluded. The default meaning of
+      "revenue", "sales", "how much did we make".
+    expression: "SUM(CASE WHEN orders.status = 'completed' THEN orders.amount_usd ELSE 0 END)"
+    requires_tables: [orders]
+    synonyms: [revenue, sales, turnover, "how much did we make", income]
+
+  - name: order_count
+    label: Number of orders
+    description: Count of orders placed (all statuses unless filtered).
+    expression: "COUNT(orders.order_id)"
+    requires_tables: [orders]
+    synonyms: ["number of orders", "how many orders", order count, orders placed]
+
+  - name: signups
+    label: Signups
+    description: Count of customers who signed up. Segment by region/plan or bucket by month.
+    expression: "COUNT(customers.customer_id)"
+    requires_tables: [customers]
+    synonyms: [signups, "new customers", "how many customers", registrations]
+
+  - name: avg_order_value
+    label: Average order value
+    description: Mean completed order amount in USD (AOV).
+    expression: "AVG(CASE WHEN orders.status = 'completed' THEN orders.amount_usd END)"
+    requires_tables: [orders]
+    synonyms: ["average order value", "aov", "mean order", "average order"]
+
+# Dimensions the metrics can be sliced by (the "by X" in a question).
+dimensions:
+  - name: region
+    column: customers.region
+    synonyms: [region, "by region", geo, geography]
+  - name: plan
+    column: customers.plan
+    synonyms: [plan, tier, "by plan", "by tier"]
+  - name: month
+    expression: "substr(orders.order_date, 1, 7)"
+    description: Year-month bucket (YYYY-MM) derived from order_date.
+    synonyms: [month, monthly, "by month", "over time"]

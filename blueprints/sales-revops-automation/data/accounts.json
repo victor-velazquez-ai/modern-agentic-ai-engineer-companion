@@ -1,0 +1,56 @@
+{
+  "acme-001": {
+    "account_id": "acme-001",
+    "name": "Acme Robotics",
+    "domain": "acmerobotics.com",
+    "stage": "Discovery",
+    "amount": null,
+    "owner": "dana@ourco.com",
+    "primary_contact": {
+      "name": "Priya Nair",
+      "email": "priya.nair@acmerobotics.com",
+      "title": "VP Engineering"
+    },
+    "next_step": "",
+    "close_date": null,
+    "employees": null,
+    "industry": null,
+    "notes": "Inbound from webinar. Evaluating build vs buy for agent platform."
+  },
+  "globex-002": {
+    "account_id": "globex-002",
+    "name": "Globex Logistics",
+    "domain": "globex.io",
+    "stage": "Proposal",
+    "amount": 48000,
+    "owner": "dana@ourco.com",
+    "primary_contact": {
+      "name": "Marcus Webb",
+      "email": "marcus.webb@globex.io",
+      "title": "Director of Ops"
+    },
+    "next_step": "Send revised pricing",
+    "close_date": "2026-07-31",
+    "employees": 1200,
+    "industry": "Logistics",
+    "notes": "Security review in progress. Champion is Marcus; economic buyer is the COO."
+  },
+  "initech-003": {
+    "account_id": "initech-003",
+    "name": "Initech Financial",
+    "domain": "initech.com",
+    "stage": "Discovery",
+    "amount": null,
+    "owner": "sam@ourco.com",
+    "primary_contact": {
+      "name": "Lena Ortiz",
+      "email": "lena.ortiz@initech.com",
+      "title": "Head of Data"
+    },
+    "next_step": "",
+    "close_date": null,
+    "employees": null,
+    "industry": "Financial Services",
+    "notes": "Compliance-sensitive. Needs SOC2 + data residency answers before moving."
+  }
+}
