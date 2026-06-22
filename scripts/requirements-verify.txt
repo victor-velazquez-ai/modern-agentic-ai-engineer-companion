@@ -1,0 +1,30 @@
+# Dependencies needed to EXECUTE every notebook in MOCK mode (the CI verify job).
+# This is intentionally lean: in MOCK mode the notebooks never import the heavy
+# model SDKs or ML stacks (those sit behind `if not MOCK:` / try-except guards),
+# so torch/chromadb/langgraph/etc. from the top-level requirements.txt are NOT
+# required just to verify execution. This exact set yields 113/113 green.
+
+# --- notebook execution harness ---
+nbclient
+nbformat
+ipykernel
+
+# --- libraries the MOCK code paths actually use ---
+python-dotenv
+numpy
+tiktoken
+pydantic
+pydantic-settings
+httpx
+rank-bm25
+anthropic
+fastapi
+uvicorn
+celery
+redis
+sqlalchemy
+opentelemetry-api
+opentelemetry-sdk
+mcp
+pytest
+hypothesis

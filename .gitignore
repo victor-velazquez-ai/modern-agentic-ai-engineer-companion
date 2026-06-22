@@ -37,6 +37,11 @@ pnpm-debug.log*
 chroma/
 .chromadb/
 
+# --- Notebook run artifacts (regenerated on execution; never commit) ---
+learn/**/eval_report.json
+learn/**/_build_context/
+learn/**/data/golden_regression.jsonl
+
 # --- Terraform (capstone infra / templates) ---
 .terraform/
 *.tfstate

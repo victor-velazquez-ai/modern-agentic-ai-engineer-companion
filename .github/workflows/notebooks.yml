@@ -1,0 +1,44 @@
+name: notebooks
+
+# Verifies that every companion notebook runs top-to-bottom in MOCK mode
+# (cost-free, offline, no API key). Static syntax gate first, then full
+# execution. Keeps the "guaranteed to run" promise on every change.
+
+on:
+  push:
+    paths:
+      - "learn/**"
+      - "scripts/**"
+      - ".github/workflows/notebooks.yml"
+  pull_request:
+    paths:
+      - "learn/**"
+      - "scripts/**"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COMPANION_MOCK: "1"
+      COMPANION_KERNEL: "python3"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install verification dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements-verify.txt
+          python -m ipykernel install --user --name python3
+
+      - name: Static gate — valid JSON + every code cell compiles
+        run: python scripts/check_notebooks.py learn
+
+      - name: Execute every notebook in MOCK mode
+        run: python scripts/verify_notebooks.py learn
