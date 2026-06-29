@@ -8,7 +8,7 @@ navigable and makes it read as one product with the book.
 ## Folder & file naming
 
 - **kebab-case** everywhere for folders.
-- **Chapters keep the book's exact numbering and slug:** `learn/part-04-building-blocks-of-agents/12-tool-use-and-function-calling/`.
+- **Chapters keep the book's exact numbering and slug:** `chapters-companion/ch12-tool-use-and-function-calling/`.
 - **Parts** are `part-NN-short-slug` where `NN` is the part's position (01–13).
 - **Notebooks:** `NN-MM-short-title.ipynb`
   - `NN` = chapter number (zero-padded), `MM` = order within the chapter (`01`, `02`, …).

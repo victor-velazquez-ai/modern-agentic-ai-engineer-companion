@@ -31,7 +31,7 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
-Open `learn/`, find your chapter folder, and start with its lowest-numbered notebook.
+Open `chapters-companion/`, find your chapter folder, and start with its lowest-numbered notebook.
 
 ---
 

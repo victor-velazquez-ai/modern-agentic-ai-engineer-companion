@@ -1,119 +1,124 @@
 # Modern Agentic AI Engineer — Official Companion
 
-The hands-on companion to the book **_Modern Agentic AI Engineer: A Full Handbook — From
-Zero to Senior / Architect-Level Engineer_** by Victor Velazquez.
+The hands-on companion to the book **_Modern Agentic AI Engineer: A Full Handbook — From Zero to
+Senior / Architect-Level Engineer_** by **Victor Miguel Velazquez Espitia**.
 
-The book teaches you *what* to build and *why*. This repository is where you **run it,
-break it, and keep it** — a cell-by-cell learning lab, a shelf of professional blueprints,
-a drawer of work-ready templates, and the complete reference capstone, all mapped chapter
-by chapter to the book.
+The book teaches *what* to build and *why*. This repository is where you **run it, break it, and keep
+it** — a cell-by-cell learning lab (one folder per chapter), a shelf of professional blueprints, a
+drawer of work-ready templates, and the complete reference capstone project, all mapped chapter by
+chapter to the book.
 
-> **The book's promise still holds: you build the capstone yourself.** This repo doesn't
-> replace that work — it *supports* it. Use the notebooks to understand each idea by
-> running it, the blueprints to see a production-grade version, the templates to start your
-> own projects faster, and the `capstone/` reference to check your work *after* you've built
-> your own. Typing and building beats cloning and pasting — every time. See
-> [`docs/HOW-TO-USE.md`](docs/HOW-TO-USE.md).
+> **The book's promise still holds: you build the capstone yourself.** This repo doesn't replace that
+> work — it *supports* it. Run each chapter's notebooks to understand an idea by executing it, study a
+> blueprint to see a production-grade version, start from a template, and use the **`capstone-project/`**
+> reference to check your work *after* you've built your own. **Build first; compare second.** Typing
+> and building beats cloning and pasting — every time. See [`docs/HOW-TO-USE.md`](docs/HOW-TO-USE.md).
 
----
-
-## 🚧 Status — planning skeleton (Phase 1)
-
-This repo is being built in phases. **Right now it contains the complete plan, not the
-finished notebooks.**
-
-- ✅ **Phase 1 (now):** the full structure + a detailed `PLAN.md` in every chapter and asset
-  folder describing exactly what will be built. This is the blueprint for the repo itself.
-- ⏳ **Phase 2 (next):** implement the notebooks, blueprints, templates, and capstone — each
-  one verified to run top-to-bottom.
-- ⏳ **Phase 3:** ship the book's **2nd edition** (the master edition) that references this
-  repo throughout. See [`docs/BOOK-INTEGRATION.md`](docs/BOOK-INTEGRATION.md).
-
-If you're browsing and a folder only has a `PLAN.md` — that's expected for now. Watch the
-[CHANGELOG](CHANGELOG.md) or star the repo to follow along.
+> **Status: live.** Every chapter companion, blueprint, template, and the capstone is implemented and
+> runs **offline in `MOCK` mode** (no API key, no cost) — verified in CI. Add a real key to run live.
 
 ---
 
-## The four pillars
+## How the repo is organized — the chapter is the front door
 
-| Pillar | Folder | What it is | Use it to… |
-|---|---|---|---|
-| 📓 **Learn** | [`learn/`](learn/) | One folder per book chapter; Jupyter notebooks that teach the chapter's ideas **cell by cell** — theory you read *and run*. | Understand a concept by executing it, experimenting, and predicting outcomes. |
-| 🧩 **Blueprints** | [`blueprints/`](blueprints/) | Self-contained, production-grade reference implementations of the recurring patterns (RAG pipeline, eval harness, MCP server, agent loop…). | Study a real, adaptable version of a pattern and lift it into your own systems. |
-| 🛠️ **Templates** | [`templates/`](templates/) | Minimal, copy-me starting scaffolds (FastAPI agent service, agent project, ADR, eval dataset, CI pipeline, Terraform module…). | Start a new project *at work* in minutes with sane defaults baked in. |
-| 🏗️ **Capstone** | [`capstone/`](capstone/) | The complete, runnable **agentic-platform** reference (the book's running project), plus per-Build **checkpoints**. | Build your own first — then compare against the reference and unblock yourself. |
+Two axes, and no more, so it's easy to navigate:
 
----
+| Folder | What it is | Use it to… |
+|---|---|---|
+| 📓 [`chapters-companion/`](chapters-companion/) | **One folder per book chapter** (`ch01-…` … `ch54-…`); Jupyter notebooks that teach the chapter's ideas **cell by cell**. The front door. | Understand a concept by executing it, experimenting, predicting outcomes. |
+| 🧩 [`blueprints/`](blueprints/) | Self-contained, production-grade reference implementations of the recurring patterns and the book's use-case solutions. | Lift a real, adaptable version of a pattern into your own systems. |
+| 🛠️ [`templates/`](templates/) | Minimal copy-me scaffolds (FastAPI agent service, project starter, ADR, CI, Terraform…). | Start a real project at work in minutes with sane defaults. |
+| 🏗️ [`capstone-project/`](capstone-project/) | The complete, runnable **agentic-platform** reference (the book's running project) + per-Build **checkpoints**. | Build your own first — then diff against the reference to unblock yourself. |
 
-## How it maps to the book
-
-The book has **13 parts, 54 chapters, and 7 appendices**, all built around a single running
-project: a general-purpose multi-agent platform. `learn/` mirrors that structure exactly:
-
-```
-learn/
-  part-01-landscape-and-mindset/        # Ch 1–3
-  part-02-software-engineering-foundations/  # Ch 4–7
-  part-03-llm-substrate/                # Ch 8–11
-  part-04-building-blocks-of-agents/    # Ch 12–15
-  part-05-architectures-and-orchestration/   # Ch 16–20
-  part-06-evaluation-observability-quality/  # Ch 21–23
-  part-07-backend-apis-architecture/    # Ch 24–31
-  part-08-cloud-and-infrastructure/     # Ch 32–36
-  part-09-frontend-and-fullstack/       # Ch 37–38
-  part-10-production-llmops/            # Ch 39–41
-  part-11-architecting-at-scale/        # Ch 42–44
-  part-12-specialized-frontiers/        # Ch 45–49
-  part-13-career-and-leadership/        # Ch 50–54
-  appendices/                          # A–G companion assets
-```
-
-Every chapter folder has a `PLAN.md` listing its planned notebooks, what each one teaches,
-and which book sections (especially the 🔧 *Build* sections) it supports. The complete map
-lives in [`docs/REPO-PLAN.md`](docs/REPO-PLAN.md).
+Each chapter folder cross-links the **blueprint(s)** and **capstone checkpoint** it relates to, so you
+can jump from "learn it" to "see it in production" in one hop.
 
 ---
 
-## Quickstart (once Phase 2 lands)
+## Chapter companions — the map (13 parts · 54 chapters)
+
+Every chapter below is a folder in [`chapters-companion/`](chapters-companion/). Part overviews live in
+[`chapters-companion/_parts/`](chapters-companion/_parts/).
+
+- **Part 1 · Landscape & Mindset:** `ch01-why-agentic-ai` · `ch02-how-to-use-this-book` · `ch03-mental-model`
+- **Part 2 · Software-Engineering Foundations:** `ch04-production-python` · `ch05-clean-code-and-design` · `ch06-data-structures-and-algorithms` · `ch07-version-control-testing-quality`
+- **Part 3 · The LLM Substrate:** `ch08-how-llms-work` · `ch09-inference-sampling-control` · `ch10-prompt-engineering` · `ch11-working-with-model-apis`
+- **Part 4 · Building Blocks of Agents:** `ch12-tool-use-and-function-calling` · `ch13-retrieval-augmented-generation` · `ch14-memory-and-state` · `ch15-structured-outputs-and-reliability`
+- **Part 5 · Architectures & Orchestration:** `ch16-agent-reasoning-patterns` · `ch17-multi-agent-systems` · `ch18-framework-landscape` · `ch19-mcp-and-tool-ecosystems` · `ch20-human-in-the-loop`
+- **Part 6 · Evaluation, Observability & Quality:** `ch21-quality-first` · `ch22-evaluation-and-quality` · `ch23-observability-for-agents`
+- **Part 7 · Backend, APIs & Architecture:** `ch24-web-and-networking` · `ch25-building-apis-with-fastapi` · `ch26-apis-at-enterprise-grade` · `ch27-software-architecture-fundamentals` · `ch28-application-architecture` · `ch29-distributed-systems-fundamentals` · `ch30-data-layer` · `ch31-distributed-backends-and-automation`
+- **Part 8 · Cloud & Infrastructure:** `ch32-cloud-foundations` · `ch33-aws-for-ai-engineers` · `ch34-azure-and-gcp` · `ch35-containers-and-kubernetes` · `ch36-infrastructure-as-code`
+- **Part 9 · Frontend & Full-Stack:** `ch37-modern-frontend-essentials` · `ch38-building-ai-interfaces`
+- **Part 10 · Production LLMOps:** `ch39-serving-and-scaling-models` · `ch40-cost-latency-performance` · `ch41-security-safety-compliance`
+- **Part 11 · Architecting at Scale:** `ch42-system-design-for-ai` · `ch43-reference-architectures` · `ch44-capstone-end-to-end`
+- **Part 12 · Specialized Frontiers:** `ch45-multimodal-agents` · `ch46-voice-and-realtime-agents` · `ch47-computer-use-and-browser-agents` · `ch48-customizing-models` · `ch49-frontier-and-staying-current`
+- **Part 13 · Career & Leadership:** `ch50-career-ladder` · `ch51-senior-to-architect` · `ch52-interviews` · `ch53-brand-open-source-community` · `ch54-products-and-companies`
+
+---
+
+## Blueprints index — production-grade reference implementations
+
+**Core pattern blueprints** (the recurring building blocks, referenced across the book):
+
+| Blueprint | Pattern | Relates to |
+|---|---|---|
+| [`agent-loop`](blueprints/agent-loop/) | the perceive → decide → act → observe loop | Ch 12, 16 |
+| [`llm-gateway`](blueprints/llm-gateway/) | provider-agnostic model gateway (retries, fallback, cost) | Ch 11, 40 |
+| [`rag-pipeline`](blueprints/rag-pipeline/) | retrieval-augmented generation, end to end | Ch 13 |
+| [`memory-module`](blueprints/memory-module/) | short- and long-term agent memory | Ch 14 |
+| [`multi-agent-supervisor`](blueprints/multi-agent-supervisor/) | supervisor / worker orchestration | Ch 17 |
+| [`mcp-server`](blueprints/mcp-server/) | a Model Context Protocol server | Ch 19 |
+| [`eval-harness`](blueprints/eval-harness/) | offline + online agent evaluation | Ch 22 |
+| [`observability-stack`](blueprints/observability-stack/) | tracing, metrics, logging for agents | Ch 23 |
+| [`fastapi-agent-service`](blueprints/fastapi-agent-service/) | an agent behind a production API | Ch 25 |
+
+**Use-case solution blueprints** — the book's Appendix-G "Agentic Use-Case Playbook," 12 sellable
+solutions, each a reference build:
+
+`customer-support-agent` · `document-extraction-pipeline` · `contract-review-assistant` ·
+`compliance-monitoring-agent` · `incident-response-copilot` · `internal-knowledge-assistant` ·
+`content-production-pipeline` · `product-copilot` · `research-due-diligence-agent` ·
+`sales-revops-automation` · `software-engineering-agent` · `text-to-sql-analytics`
+→ all in [`blueprints/`](blueprints/).
+
+---
+
+## Templates — copy-to-work scaffolds
+
+`agent-project-starter` · `fastapi-agent-service` · `prompt-template` · `eval-dataset-template` ·
+`adr-template` · `system-design-doc` · `dockerfile-and-compose` · `github-actions-ci` ·
+`terraform-module` · `production-readiness-checklist` · `web-starter` → in [`templates/`](templates/).
+
+---
+
+## Quickstart
 
 ```bash
-git clone https://github.com/victor-velazquez-ai/modern-agentic-ai-engineer-companion.git
+git clone https://github.com/victor-velazquez-ai/modern-agentic-ai-engineer-companion
 cd modern-agentic-ai-engineer-companion
-cp .env.example .env          # add ANTHROPIC_API_KEY at minimum
-python -m venv .venv && source .venv/bin/activate   # (Windows: .venv\Scripts\activate)
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-jupyter lab                    # open learn/ and start with your chapter
+# Everything runs offline in MOCK mode — no API key, no cost:
+jupyter lab chapters-companion/ch01-why-agentic-ai/
 ```
 
-Full environment setup (Python, Node, Docker, API keys, cost-free "mock" modes) is in
-[`docs/SETUP.md`](docs/SETUP.md).
+To run against real models, copy `.env.example` to `.env` and add a key (see
+[`docs/SETUP.md`](docs/SETUP.md)). The capstone runs via `make` targets in
+[`capstone-project/`](capstone-project/).
 
 ---
 
 ## Repository documentation
 
-- [`docs/REPO-PLAN.md`](docs/REPO-PLAN.md) — the master plan: vision, full structure, the
-  complete chapter→asset map, and the Phase 2 build process.
-- [`docs/HOW-TO-USE.md`](docs/HOW-TO-USE.md) — the learner's guide: reading paths and how to
-  use each pillar without falling into "paste, don't think."
+- [`docs/HOW-TO-USE.md`](docs/HOW-TO-USE.md) — the learner's guide: reading paths and how to use each
+  part of the repo without falling into "paste, don't think."
 - [`docs/SETUP.md`](docs/SETUP.md) — environment setup and running notebooks safely/cheaply.
-- [`docs/NOTEBOOK-STANDARDS.md`](docs/NOTEBOOK-STANDARDS.md) — the authoring standard every
-  notebook follows (so Phase 2 stays consistent and high quality).
-- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — naming, the canonical `PLAN.md` template,
-  and callout conventions mirrored from the book.
-- [`docs/BOOK-INTEGRATION.md`](docs/BOOK-INTEGRATION.md) — how the 2nd edition references
-  this repo, and the republish checklist.
-
----
+- [`docs/REPO-PLAN.md`](docs/REPO-PLAN.md) — the master plan and chapter→asset map.
+- [`docs/NOTEBOOK-STANDARDS.md`](docs/NOTEBOOK-STANDARDS.md) · [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — authoring standards.
+- [`docs/BOOK-INTEGRATION.md`](docs/BOOK-INTEGRATION.md) — how the book's 2nd edition references this repo.
 
 ## License
 
-Code, templates, and configuration in this repository are released under the
-[MIT License](LICENSE) so you can reuse them freely in your own and your employer's
-projects. The teaching prose in notebooks accompanies the book *Modern Agentic AI Engineer*
-and remains © 2026 Victor Velazquez; it's provided here for readers' personal learning. When
-in doubt: **the code is yours to use; the lessons are yours to learn from.**
-
----
-
-*Built as the companion I wish every technical book shipped with. — V.V.*
+Code, templates, and configuration are released under the [MIT License](LICENSE) — reuse them freely.
+The teaching prose accompanies the book and remains © 2026 Victor Miguel Velazquez Espitia; it's here
+for readers' personal learning. **The code is yours to use; the lessons are yours to learn from.**

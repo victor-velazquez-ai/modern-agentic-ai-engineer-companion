@@ -1,6 +1,6 @@
 # Notebook Authoring Standards
 
-The quality contract for every notebook in `learn/`. Phase 2 authors (human or agent) follow
+The quality contract for every notebook in `chapters-companion/`. Phase 2 authors (human or agent) follow
 this so 100+ notebooks read as one consistent, trustworthy course — not a pile of scripts.
 
 The North Star, borrowed from the book's playbook: **the reader must feel they're learning
@@ -83,7 +83,7 @@ Every notebook has these cells, in order:
 - `nbval`/`papermill` execute every notebook in `MOCK=1` on push and on a schedule — green
   means "runs top-to-bottom, no errors."
 - A nightly **gated** job runs a sampled subset with `MOCK=0` to catch SDK drift.
-- The `capstone/` gets a separate `docker compose up` + healthcheck smoke test.
+- The `capstone-project/` gets a separate `docker compose up` + healthcheck smoke test.
 - Lint: `ruff`/`black` for code cells, `nbqa` to apply them to notebooks.
 
 ---

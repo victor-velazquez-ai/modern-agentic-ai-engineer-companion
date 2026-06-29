@@ -32,11 +32,11 @@ The book's core promise is **"you build the capstone yourself."** That promise i
 book works — typing and building creates understanding that cloning and pasting never will.
 This repo must reinforce that, not undercut it. Concretely:
 
-- **`learn/` notebooks** teach *concepts in isolation* — sandboxes and experiments, not the
+- **`chapters-companion/` notebooks** teach *concepts in isolation* — sandboxes and experiments, not the
   capstone handed over. You run them to understand, then go build the real thing.
 - **`blueprints/`** are *adaptable reference patterns*, framed as "study and lift," not
   "the answer to copy."
-- **`capstone/`** is the **complete reference implementation** — present (the author chose
+- **`capstone-project/`** is the **complete reference implementation** — present (the author chose
   maximal completeness) but framed throughout as **"build yours first, then compare"**: an
   answer key and an unblocking aid, with `checkpoints/` that match each Build section so a
   stuck reader can diff against a known-good state rather than abandon the build.
@@ -50,7 +50,7 @@ or does it tempt them to skip the building?* If the latter, reframe it.
 
 Four pillars, each with a precise definition so we never blur them.
 
-### 📓 Learn — chapter notebooks (`learn/`)
+### 📓 Learn — chapter notebooks (`chapters-companion/`)
 One folder per book chapter, mirroring the book's parts. Each holds one or more Jupyter
 notebooks of two flavors:
 
@@ -76,7 +76,7 @@ job**. Sane defaults, TODO markers, no business logic. Examples: a FastAPI agent
 agent project starter, an ADR template, an eval dataset template, a system-design doc, a CI
 pipeline, a Terraform module, a prompt file. Optimized for "clone this folder and go."
 
-### 🏗️ Capstone — the complete platform (`capstone/`)
+### 🏗️ Capstone — the complete platform (`capstone-project/`)
 The full, runnable **agentic-platform** — the realization of the book's Appendix C. This is
 the dedicated home for the finished reference project, plus:
 
@@ -105,7 +105,7 @@ modern-agentic-ai-engineer-companion/
 │   ├── SETUP.md                  # environment, API keys, cost-free mock modes
 │   ├── NOTEBOOK-STANDARDS.md     # the authoring standard for every notebook
 │   └── CONVENTIONS.md            # naming + the canonical PLAN.md template + callouts
-├── learn/                        # 📓 per-chapter notebooks (mirrors the book)
+├── chapters-companion/                        # 📓 per-chapter notebooks (mirrors the book)
 │   ├── part-01-landscape-and-mindset/
 │   │   ├── README.md             #   part overview + chapter index
 │   │   ├── 01-why-agentic-ai/PLAN.md
@@ -130,7 +130,7 @@ modern-agentic-ai-engineer-companion/
 ├── templates/
 │   ├── README.md                 # catalog of templates
 │   └── <one folder per template>/PLAN.md
-└── capstone/
+└── capstone-project/
     ├── README.md                 # what the capstone is + Appendix C mapping
     ├── PLAN.md                   # directory-by-directory build plan
     └── checkpoints/PLAN.md       # per-Build checkpoint scheme
@@ -191,7 +191,7 @@ chapter contributes to.
 | X | 41 | Security, Safety & Compliance | Walkthrough — prompt-injection defenses, guardrails |
 | XI | 42 | System Design for AI | Concept — the method + back-of-envelope estimation → system-design template |
 | XI | 43 | Reference Architectures | Concept — case studies → blueprint cross-links |
-| XI | 44 | Capstone End-to-End | The full `capstone/` walkthrough + production-readiness pass |
+| XI | 44 | Capstone End-to-End | The full `capstone-project/` walkthrough + production-readiness pass |
 | XII | 45 | Multimodal Agents | Walkthrough — vision/document extraction |
 | XII | 46 | Voice & Realtime | Walkthrough — realtime/turn-taking (mockable) |
 | XII | 47 | Computer-Use & Browser Agents | Walkthrough — browser automation, sandboxed |
@@ -204,10 +204,10 @@ chapter contributes to.
 | XIII | 54 | Products & Companies | Worksheet — the 12–24 month roadmap |
 
 **Appendices** map to companion assets rather than chapters: A (toolchain) → `docs/SETUP.md`;
-B (cheat sheets) → quick-reference notebooks/`templates/`; C (capstone map) → `capstone/`;
+B (cheat sheets) → quick-reference notebooks/`templates/`; C (capstone map) → `capstone-project/`;
 D (resources) → curated links; E (glossary) → reference; F (master checklist) → checklist
 template; G (use-case playbook) → a set of `blueprints/`. Detail in
-[`learn/appendices/PLAN.md`](../learn/appendices/PLAN.md).
+[`chapters-companion/appendices/PLAN.md`](../chapters-companion/appendices/PLAN.md).
 
 > **Note on "no-code" chapters.** Some chapters (e.g., 2, 49, 50, 53) are intentionally
 > reference/worksheet-only — their `PLAN.md` says so and explains why. Completeness means the
@@ -258,7 +258,7 @@ re-publish. The full plan and edit-point list is in
 ## 7. Definition of done for Phase 1
 
 - [x] Every part has a folder and README; every chapter has a folder and `PLAN.md`.
-- [x] `blueprints/`, `templates/`, `capstone/` each have a catalog + per-asset `PLAN.md`.
+- [x] `blueprints/`, `templates/`, `capstone-project/` each have a catalog + per-asset `PLAN.md`.
 - [x] Standards docs (`NOTEBOOK-STANDARDS`, `CONVENTIONS`) + learner/setup docs exist.
 - [x] `BOOK-INTEGRATION.md` enumerates every place the 2nd edition must change.
 - [x] Repo pushed public; README clearly marks it a planning skeleton.

@@ -57,10 +57,10 @@ Paths are relative to `books/modern-agentic-ai-engineer/`.
 
 ### 2.3 `chapters/92-appendix-capstone.typ` (Appendix C)
 - **Reframe the opening**: keep "the repo you build," add "…and a complete reference
-  implementation now lives in the companion at `capstone/`, with per-Build `checkpoints/` so
+  implementation now lives in the companion at `capstone-project/`, with per-Build `checkpoints/` so
   you can check your work."
 - Update the `git clone …agentic-platform.git` example to the companion URL and the
-  `capstone/` path; keep the "your own remote" note for the reader's *own* build.
+  `capstone-project/` path; keep the "your own remote" note for the reader's *own* build.
 - Add a short "How to use the reference without cheating yourself" box.
 
 ### 2.4 Every 🔧 Build section (all chapters with one)

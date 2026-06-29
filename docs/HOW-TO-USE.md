@@ -16,7 +16,7 @@ warns about: **consuming instead of building.**
 
 ## The four pillars — when to reach for each
 
-- **📓 `learn/` notebooks** — when you want to *understand* a concept by running it. Open the
+- **📓 `chapters-companion/` notebooks** — when you want to *understand* a concept by running it. Open the
   chapter you're reading, run the notebook cell by cell, and do the 🔮 predict prompts before
   each output. Then change something and rerun.
 - **🧩 `blueprints/`** — when you're *building something real* and want a senior-grade
@@ -24,14 +24,14 @@ warns about: **consuming instead of building.**
   trade-offs, adapt it. Don't paste it blind.
 - **🛠️ `templates/`** — when you're *starting a new project* (often at work) and want a sane
   scaffold in minutes. Copy the folder, follow the TODOs.
-- **🏗️ `capstone/`** — when you want to see how *all* of it fits together, or you're stuck on
+- **🏗️ `capstone-project/`** — when you want to see how *all* of it fits together, or you're stuck on
   a Build section and need a known-good checkpoint to diff against.
 
 ---
 
 ## Reading paths (mirror the book)
 
-- **Cover-to-cover (zero → master):** read the chapter, run its `learn/` notebooks, do the
+- **Cover-to-cover (zero → master):** read the chapter, run its `chapters-companion/` notebooks, do the
   Build in your own repo, diff against the checkpoint. Repeat. Parts I → XIII.
 - **Already strong in SWE:** skim Part II's notebooks as drills; go deep from Part III.
 - **Already strong in agents:** jump to Parts VII–XI; lean on `blueprints/` and `templates/`
