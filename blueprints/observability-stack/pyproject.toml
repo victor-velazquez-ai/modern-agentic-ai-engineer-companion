@@ -9,7 +9,7 @@ description = "OpenTelemetry-style tracing and cost/token accounting for agent r
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Victor Velazquez" }]
+authors = [{ name = "Victor Miguel Velazquez Espitia" }]
 keywords = ["observability", "opentelemetry", "tracing", "agents", "llm", "cost"]
 
 # Core is stdlib-only: the console exporter, the span tree, and the cost roll-up need
